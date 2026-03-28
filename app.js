@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.28.6";
+const APP_VERSION = "2026.03.28.7";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -581,9 +581,7 @@ function renderRotation() {
 
   elements.rotationOutput.innerHTML = `
     <div class="period-toolbar">
-      <button type="button" data-period-shift="-1" ${activeRotationPeriod === 0 ? "disabled" : ""}>Previous</button>
       <div class="period-tabs">${periodButtons}</div>
-      <button type="button" data-period-shift="1" ${activeRotationPeriod === rotationPlan.periods.length - 1 ? "disabled" : ""}>Next</button>
     </div>
 
     <article class="rotation-card focus-card">
@@ -648,19 +646,6 @@ function bindRotationControls() {
   elements.rotationOutput.querySelectorAll("[data-period-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       activeRotationPeriod = Number.parseInt(button.dataset.periodTab, 10);
-      clearRotationSelection();
-      renderRotation();
-    });
-  });
-
-  elements.rotationOutput.querySelectorAll("[data-period-shift]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const nextIndex = activeRotationPeriod + Number.parseInt(button.dataset.periodShift, 10);
-      if (nextIndex < 0 || nextIndex >= currentRotationPlan.periods.length) {
-        return;
-      }
-
-      activeRotationPeriod = nextIndex;
       clearRotationSelection();
       renderRotation();
     });

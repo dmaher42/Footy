@@ -516,10 +516,7 @@ th {
 }
 
 .period-toolbar {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 0.75rem;
-  align-items: center;
+  display: block;
 }
 
 .period-tabs {

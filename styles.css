@@ -912,6 +912,37 @@ th {
     grid-template-columns: 1fr;
   }
 
+  #rotation-section .rotation-output {
+    justify-items: center;
+  }
+
+  #rotation-section .rotation-output > * {
+    width: 100%;
+    max-width: 34rem;
+  }
+
+  #rotation-section .period-toolbar {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  #rotation-section .period-tabs {
+    justify-content: center;
+    padding-inline: 0.25rem;
+  }
+
+  #rotation-section .rotation-card,
+  #rotation-section .board-zone,
+  #rotation-section .field-line {
+    width: 100%;
+  }
+
+  #rotation-section .focus-card-header,
+  #rotation-section .board-zone-header {
+    text-align: center;
+    align-items: center;
+  }
+
   .period-tabs {
     justify-content: flex-start;
   }
@@ -987,7 +1018,11 @@ th {
 
   .player-board,
   .bench-board {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
+  }
+
+  .field-line-board {
+    grid-template-columns: 1fr;
   }
 
 }

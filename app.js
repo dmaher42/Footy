@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.28.16";
+const APP_VERSION = "2026.03.28.17";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {

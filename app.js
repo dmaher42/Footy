@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.28.12";
+const APP_VERSION = "2026.03.28.13";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -100,6 +100,7 @@ const elements = {
   bulkInput: document.querySelector("#bulk-player-input"),
   addPlayersBtn: document.querySelector("#add-players-btn"),
   clearAllBtn: document.querySelector("#clear-all-btn"),
+  toggleBenchRulesBtn: document.querySelector("#toggle-bench-rules-btn"),
   editSetupBtn: document.querySelector("#edit-setup-btn"),
   closeSetupBtn: document.querySelector("#close-setup-btn"),
   generateCloseBtn: document.querySelector("#generate-close-btn"),
@@ -108,12 +109,14 @@ const elements = {
   setupBackdrop: document.querySelector("#setup-backdrop"),
   setupPanel: document.querySelector("#setup-panel"),
   copyFeedbackBtn: document.querySelector("#copy-feedback-btn"),
+  toggleFullReportBtn: document.querySelector("#toggle-full-report-btn"),
   copyReportBtn: document.querySelector("#copy-report-btn"),
   feedbackTracker: document.querySelector("#feedback-tracker"),
   postGameReport: document.querySelector("#post-game-report"),
   tableBody: document.querySelector("#player-table-body"),
   messages: document.querySelector("#messages"),
   rotationOutput: document.querySelector("#rotation-output"),
+  playerTableWrap: document.querySelector("#player-table-wrap"),
   playerRowTemplate: document.querySelector("#player-row-template"),
 };
 
@@ -124,6 +127,8 @@ let activeRotationPeriod = 0;
 let selectedFieldPlayerId = "";
 let selectedBenchPlayerId = "";
 let showRotationSummary = false;
+let showBenchRules = false;
+let showFullGameReport = false;
 let serviceWorkerRegistration = null;
 let waitingServiceWorker = null;
 let shouldReloadForUpdate = false;
@@ -138,6 +143,7 @@ render();
 function bindEvents() {
   elements.addPlayersBtn.addEventListener("click", addPlayersFromBulkInput);
   elements.clearAllBtn.addEventListener("click", clearAllPlayers);
+  elements.toggleBenchRulesBtn.addEventListener("click", toggleBenchRulesVisibility);
   elements.editSetupBtn.addEventListener("click", openSetupPanel);
   elements.closeSetupBtn.addEventListener("click", closeSetupPanel);
   elements.generateCloseBtn.addEventListener("click", refreshPlanAndCloseSetup);
@@ -147,6 +153,7 @@ function bindEvents() {
   elements.checkUpdateBtn.addEventListener("click", checkForAppUpdate);
   elements.applyUpdateBtn.addEventListener("click", applyAppUpdate);
   elements.copyFeedbackBtn.addEventListener("click", copySelectedFeedbackSummary);
+  elements.toggleFullReportBtn.addEventListener("click", toggleFullGameReportVisibility);
   elements.copyReportBtn.addEventListener("click", copyFullPostGameReport);
 
   elements.gameViewButtons.forEach((button) => {
@@ -406,6 +413,7 @@ function addPlayersFromBulkInput() {
     addedCount += 1;
   });
 
+  sortPlayersAlphabetically();
   elements.bulkInput.value = "";
   saveState();
   refreshPlanAndRender();
@@ -444,6 +452,7 @@ function render() {
   syncSettingsInputs();
   syncSetupPanel();
   syncGameView();
+  syncBenchRulesVisibility();
   syncSelectedFeedbackPlayer();
   renderPlayerTable();
   renderRotation();
@@ -489,6 +498,13 @@ function renderPlayerTable() {
       player.name = event.target.value.trimStart();
       saveState();
       refreshPlanAndRender();
+    });
+
+    nameInput.addEventListener("change", () => {
+      sortPlayersAlphabetically();
+      currentRotationPlan = buildRotationPlan();
+      saveState();
+      render();
     });
 
     positionInput.addEventListener("input", (event) => {
@@ -659,12 +675,8 @@ function bindRotationControls() {
   elements.rotationOutput.querySelectorAll("[data-period-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       activeRotationPeriod = Number.parseInt(button.dataset.periodTab, 10);
-      state.feedback.currentQuarter = activeRotationPeriod + 1;
-      saveState();
       clearRotationSelection();
       renderRotation();
-      renderFeedbackTracker();
-      renderPostGameReport();
     });
   });
 
@@ -1321,6 +1333,9 @@ function renderPostGameReport() {
   const quarterEntries = buildQuarterReportEntries(selectedQuarter);
   const reportEntries = buildPostGameReportEntries();
 
+  elements.toggleFullReportBtn.textContent = showFullGameReport ? "Hide Full Report" : "Show Full Report";
+  elements.copyReportBtn.hidden = !showFullGameReport || !reportEntries.length;
+
   if (!quarterEntries.length && !reportEntries.length) {
     elements.postGameReport.innerHTML = '<p class="placeholder">Track some player feedback during the game to build a post-game report.</p>';
     return;
@@ -1346,15 +1361,17 @@ function renderPostGameReport() {
       <div class="report-grid">${quarterSummaryCards}</div>
     </article>
 
-    <article class="feedback-panel">
-      <div class="section-heading report-card-header">
-        <div>
-          <h3>Full Game Report</h3>
-          <p class="helper">This combines all quarter feedback for each player.</p>
+    ${showFullGameReport ? `
+      <article class="feedback-panel">
+        <div class="section-heading report-card-header">
+          <div>
+            <h3>Full Game Report</h3>
+            <p class="helper">This combines all quarter feedback for each player.</p>
+          </div>
         </div>
-      </div>
-      <div class="report-grid">${fullReportCards}</div>
-    </article>
+        <div class="report-grid">${fullReportCards}</div>
+      </article>
+    ` : ""}
   `;
 
   elements.postGameReport.querySelectorAll("[data-report-quarter]").forEach((button) => {
@@ -1482,6 +1499,21 @@ function copyFullPostGameReport() {
   navigator.clipboard.writeText(reportText).catch((error) => {
     console.error("Could not copy post-game report.", error);
   });
+}
+
+function toggleBenchRulesVisibility() {
+  showBenchRules = !showBenchRules;
+  syncBenchRulesVisibility();
+}
+
+function syncBenchRulesVisibility() {
+  elements.playerTableWrap.classList.toggle("show-bench-rules", showBenchRules);
+  elements.toggleBenchRulesBtn.textContent = showBenchRules ? "Hide Bench Rules" : "Show Bench Rules";
+}
+
+function toggleFullGameReportVisibility() {
+  showFullGameReport = !showFullGameReport;
+  renderPostGameReport();
 }
 
 function bindSwapButtons() {
@@ -1801,7 +1833,6 @@ function normalizeNullableNonNegativeNumber(value) {
 }
 
 function saveState() {
-  sortPlayersAlphabetically();
   const payload = JSON.stringify({
     players: state.players,
     settings: state.settings,

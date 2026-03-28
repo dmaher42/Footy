@@ -85,7 +85,10 @@
               <h2>Squad List</h2>
               <p class="helper">Paste one player per line for the fastest setup.</p>
             </div>
-            <button id="clear-all-btn" type="button" class="danger-text">Clear All Players</button>
+            <div class="inline-actions compact-actions setup-heading-actions">
+              <button id="toggle-bench-rules-btn" type="button">Show Bench Rules</button>
+              <button id="clear-all-btn" type="button" class="danger-text">Clear All Players</button>
+            </div>
           </div>
 
           <label class="full-width">
@@ -96,16 +99,16 @@
             <button id="add-players-btn" type="button">Add Players</button>
           </div>
 
-          <div class="table-wrap">
+          <div id="player-table-wrap" class="table-wrap">
             <table>
               <thead>
                 <tr>
                   <th>Name</th>
                   <th>Preferred Position</th>
                   <th>Available</th>
-                  <th>Can Bench</th>
-                  <th>Bench First</th>
-                  <th>Max Bench</th>
+                  <th class="bench-rule-col">Can Bench</th>
+                  <th class="bench-rule-col">Bench First</th>
+                  <th class="bench-rule-col">Max Bench</th>
                   <th>Remove</th>
                 </tr>
               </thead>
@@ -154,10 +157,13 @@
       <section id="report-section" class="card game-view-section" hidden>
         <div class="section-heading panel-heading">
           <div>
-            <h2>Post-Game Report</h2>
-            <p class="helper">Use this after the game when you want the full report.</p>
+            <h2>Reports</h2>
+            <p class="helper">Use the quarter summary at breaks. Open the full report when you need it.</p>
           </div>
-          <button id="copy-report-btn" type="button">Copy Full Report</button>
+          <div class="inline-actions compact-actions">
+            <button id="toggle-full-report-btn" type="button">Show Full Report</button>
+            <button id="copy-report-btn" type="button" hidden>Copy Full Report</button>
+          </div>
         </div>
         <div id="post-game-report" class="post-game-report">
           <p class="placeholder">Track some player feedback during the game to build a post-game report.</p>
@@ -177,13 +183,13 @@
       <td class="checkbox-cell" data-label="Available">
         <input class="player-active" type="checkbox" checked>
       </td>
-      <td class="checkbox-cell" data-label="Can Bench">
+      <td class="checkbox-cell bench-rule-col" data-label="Can Bench">
         <input class="player-can-bench" type="checkbox" checked>
       </td>
-      <td class="checkbox-cell" data-label="Bench First">
+      <td class="checkbox-cell bench-rule-col" data-label="Bench First">
         <input class="player-bench-first" type="checkbox">
       </td>
-      <td class="max-bench-cell" data-label="Max Bench">
+      <td class="max-bench-cell bench-rule-col" data-label="Max Bench">
         <input class="player-max-bench" type="number" min="0" max="12" placeholder="No limit">
       </td>
       <td class="checkbox-cell" data-label="Remove">

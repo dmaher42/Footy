@@ -241,9 +241,21 @@ label {
   margin-top: 0.75rem;
 }
 
+.setup-heading-actions {
+  margin-top: 0;
+}
+
 .table-wrap {
   overflow-x: auto;
   margin-top: 1rem;
+}
+
+.table-wrap .bench-rule-col {
+  display: none;
+}
+
+.table-wrap.show-bench-rules .bench-rule-col {
+  display: table-cell;
 }
 
 table {
@@ -334,10 +346,6 @@ th {
   margin-top: 0;
 }
 
-.live-feedback-panel {
-  gap: 1rem;
-}
-
 .live-feedback-header {
   align-items: center;
 }
@@ -378,24 +386,6 @@ th {
   height: 2rem;
   border-radius: 999px;
   background: rgba(18, 102, 79, 0.16);
-}
-
-.live-feedback-grid {
-  grid-template-columns: 1fr;
-}
-
-.live-feedback-btn {
-  min-height: 112px;
-  padding: 1rem 1.1rem;
-  font-size: 1.05rem;
-}
-
-.live-action-row {
-  justify-content: stretch;
-}
-
-.live-action-row button {
-  flex: 1 1 0;
 }
 
 .feedback-note-list {
@@ -881,6 +871,10 @@ th {
 
   .table-wrap {
     overflow: visible;
+  }
+
+  .table-wrap.show-bench-rules .bench-rule-col {
+    display: block;
   }
 
   table,

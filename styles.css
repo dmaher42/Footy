@@ -815,6 +815,16 @@ th {
     margin-bottom: 0.75rem;
   }
 
+  #rotation-section .panel-heading {
+    text-align: center;
+    align-items: center;
+  }
+
+  #rotation-section .panel-heading .helper {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   .setup-panel {
     width: 100%;
     padding: 0;
@@ -845,6 +855,10 @@ th {
   .period-toolbar,
   .rotation-board {
     grid-template-columns: 1fr;
+  }
+
+  .period-tabs {
+    justify-content: center;
   }
 
   .feedback-player-switcher {

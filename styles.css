@@ -242,6 +242,100 @@ th {
   margin-bottom: 1rem;
 }
 
+.feedback-tracker {
+  display: grid;
+  gap: 1rem;
+}
+
+.feedback-player-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.player-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 999px;
+  padding: 0.75rem 1rem;
+  background: rgba(18, 102, 79, 0.08);
+  border: 1px solid rgba(18, 102, 79, 0.12);
+}
+
+.player-chip.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.player-chip-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.24);
+  font-size: 0.85rem;
+}
+
+.feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.feedback-panel {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1rem;
+  background: var(--surface);
+}
+
+.feedback-panel h3 {
+  margin-top: 0;
+}
+
+.feedback-category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.feedback-category-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: left;
+  min-height: 72px;
+  background: rgba(18, 102, 79, 0.08);
+  border: 1px solid rgba(18, 102, 79, 0.16);
+}
+
+.feedback-category-btn strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: rgba(18, 102, 79, 0.16);
+}
+
+.feedback-note-list {
+  margin: 1rem 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.feedback-summary-text {
+  margin: 0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
 .setup-backdrop {
   position: fixed;
   inset: 0;
@@ -467,6 +561,17 @@ th {
 
   .setup-panel-actions button {
     width: 100%;
+  }
+
+  .feedback-grid,
+  .feedback-category-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feedback-player-bar {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.25rem;
   }
 
   .table-wrap {

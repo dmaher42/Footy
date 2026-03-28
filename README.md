@@ -21,6 +21,13 @@ The app is now prepared to work like a home-screen web app on mobile.
 5. If needed, use the **Manual Swap** controls inside each period to swap one field player with one bench player.
 6. Use **Print / Save PDF** if you want a paper copy for game day.
 
+## Player Feedback
+
+- Use the `Player Feedback` section on the main screen during the game.
+- Tap a player, then tap quick categories like effort, defence, leadership, or 1%ers.
+- Add short notes when something specific happens.
+- Use `Copy Feedback` to copy the selected player's summary after the game.
+
 ## Notes
 
 - The app saves your squad and settings in your browser on this computer.

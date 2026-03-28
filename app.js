@@ -1,4 +1,72 @@
 const STORAGE_KEY = "footy-player-manager-state";
+const FEEDBACK_CATEGORIES = [
+  {
+    id: "effort",
+    label: "Effort",
+    title: "Effort and Work Rate",
+    icon: "💪",
+    prompts: [
+      "Ran all day and set the tone with repeat efforts.",
+      "Kept turning up at contests and made the opposition work.",
+      "Chased hard and never stopped competing."
+    ]
+  },
+  {
+    id: "teamplay",
+    label: "Team Play",
+    title: "Support and Team Play",
+    icon: "🤝",
+    prompts: [
+      "Played team-first footy and made teammates better.",
+      "Blocked and shepherded so others could break free.",
+      "Worked hard to bring teammates into the game."
+    ]
+  },
+  {
+    id: "leadership",
+    label: "Leadership",
+    title: "Leadership and Voice",
+    icon: "🗣",
+    prompts: [
+      "Used their voice all game and organised others well.",
+      "Stayed calm under pressure and lifted the group.",
+      "Led by example when we needed someone to step up."
+    ]
+  },
+  {
+    id: "defence",
+    label: "Defence",
+    title: "Defensive Effort",
+    icon: "🛡",
+    prompts: [
+      "Shut down their opponent and played disciplined footy.",
+      "Read the play well and helped us rebound smartly.",
+      "Took strong defensive moments that stopped the opposition."
+    ]
+  },
+  {
+    id: "offence",
+    label: "Offence",
+    title: "Offensive Impact",
+    icon: "⚡",
+    prompts: [
+      "Drove us forward and created attacking opportunities.",
+      "Ran hard to provide an option and opened up the field.",
+      "Used the ball well in attacking moments."
+    ]
+  },
+  {
+    id: "teamacts",
+    label: "1%ers",
+    title: "1%ers / Team First Acts",
+    icon: "🧠",
+    prompts: [
+      "Did the little team-first things that win games.",
+      "Showed courage and discipline in key moments.",
+      "Put the team first with repeat one-percent efforts."
+    ]
+  }
+];
 
 const state = {
   players: [],
@@ -6,6 +74,10 @@ const state = {
     periodLabel: "Quarter",
     periodCount: 4,
     playersOnField: 18,
+  },
+  feedback: {
+    selectedPlayerId: null,
+    byPlayerId: {},
   },
 };
 
@@ -24,6 +96,8 @@ const elements = {
   printBtn: document.querySelector("#print-btn"),
   setupBackdrop: document.querySelector("#setup-backdrop"),
   setupPanel: document.querySelector("#setup-panel"),
+  copyFeedbackBtn: document.querySelector("#copy-feedback-btn"),
+  feedbackTracker: document.querySelector("#feedback-tracker"),
   tableBody: document.querySelector("#player-table-body"),
   messages: document.querySelector("#messages"),
   rotationOutput: document.querySelector("#rotation-output"),
@@ -48,6 +122,7 @@ function bindEvents() {
   elements.generateBtn.addEventListener("click", refreshPlanAndCloseSetup);
   elements.printBtn.addEventListener("click", () => window.print());
   elements.setupBackdrop.addEventListener("click", closeSetupPanel);
+  elements.copyFeedbackBtn.addEventListener("click", copySelectedFeedbackSummary);
 
   elements.periodLabel.addEventListener("input", handleSettingsChange);
   elements.periodCount.addEventListener("input", handleSettingsChange);
@@ -135,6 +210,10 @@ function clearAllPlayers() {
   }
 
   state.players = [];
+  state.feedback = {
+    selectedPlayerId: null,
+    byPlayerId: {},
+  };
   currentRotationPlan = null;
   saveState();
   render();
@@ -144,8 +223,10 @@ function clearAllPlayers() {
 function render() {
   syncSettingsInputs();
   syncSetupPanel();
+  syncSelectedFeedbackPlayer();
   renderPlayerTable();
   renderRotation();
+  renderFeedbackTracker();
 }
 
 function syncSettingsInputs() {
@@ -220,9 +301,13 @@ function renderPlayerTable() {
 
     removeButton.addEventListener("click", () => {
       state.players = state.players.filter((entry) => entry.id !== player.id);
+      delete state.feedback.byPlayerId[player.id];
+      if (state.feedback.selectedPlayerId === player.id) {
+        state.feedback.selectedPlayerId = null;
+      }
       saveState();
       refreshPlanAndRender();
-      renderPlayerTable();
+      render();
     });
 
     row.dataset.playerId = player.id;
@@ -526,6 +611,7 @@ function buildRotationPlan() {
 function refreshPlanAndRender() {
   currentRotationPlan = buildRotationPlan();
   renderRotation();
+  renderFeedbackTracker();
 }
 
 function refreshPlanAndCloseSetup() {
@@ -548,6 +634,284 @@ function syncSetupPanel() {
   elements.setupPanel.setAttribute("aria-hidden", String(!isSetupOpen));
   elements.setupBackdrop.hidden = !isSetupOpen;
   document.body.classList.toggle("setup-open", isSetupOpen);
+}
+
+function syncSelectedFeedbackPlayer() {
+  const availablePlayers = state.players.filter((player) => player.name && player.active);
+
+  if (!availablePlayers.length) {
+    state.feedback.selectedPlayerId = null;
+    return;
+  }
+
+  const selectedStillExists = availablePlayers.some((player) => player.id === state.feedback.selectedPlayerId);
+  if (!selectedStillExists) {
+    state.feedback.selectedPlayerId = availablePlayers[0].id;
+  }
+}
+
+function renderFeedbackTracker() {
+  const availablePlayers = state.players.filter((player) => player.name && player.active);
+
+  if (!availablePlayers.length) {
+    elements.feedbackTracker.innerHTML = '<p class="placeholder">Add players to start tracking feedback.</p>';
+    return;
+  }
+
+  const selectedPlayer = availablePlayers.find((player) => player.id === state.feedback.selectedPlayerId) || availablePlayers[0];
+  state.feedback.selectedPlayerId = selectedPlayer.id;
+
+  const selectedFeedback = getPlayerFeedback(selectedPlayer.id);
+  const playerButtons = availablePlayers
+    .map((player) => {
+      const feedback = getPlayerFeedback(player.id);
+      const totalMarks = getTotalFeedbackMarks(feedback);
+      const activeClass = player.id === selectedPlayer.id ? "player-chip active" : "player-chip";
+      return `
+        <button class="${activeClass}" type="button" data-player-select="${player.id}">
+          <span>${escapeHtml(player.name)}</span>
+          <span class="player-chip-count">${totalMarks}</span>
+        </button>
+      `;
+    })
+    .join("");
+
+  const categoryButtons = FEEDBACK_CATEGORIES
+    .map((category) => `
+      <button class="feedback-category-btn" type="button" data-category-id="${category.id}">
+        <span>${category.icon} ${escapeHtml(category.title)}</span>
+        <strong>${selectedFeedback.counts[category.id] || 0}</strong>
+      </button>
+    `)
+    .join("");
+
+  const notesList = selectedFeedback.notes.length
+    ? selectedFeedback.notes
+        .slice()
+        .reverse()
+        .map((note) => `<li>${escapeHtml(note)}</li>`)
+        .join("")
+    : '<li class="muted">No notes yet for this player.</li>';
+
+  const summaryText = buildFeedbackSummary(selectedPlayer, selectedFeedback);
+  const snapshotRows = availablePlayers
+    .map((player) => {
+      const feedback = getPlayerFeedback(player.id);
+      return `
+        <tr>
+          <td>${escapeHtml(player.name)}</td>
+          <td>${getTotalFeedbackMarks(feedback)}</td>
+          <td>${feedback.notes.length}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  elements.feedbackTracker.innerHTML = `
+    <div class="feedback-player-bar">${playerButtons}</div>
+    <div class="feedback-grid">
+      <article class="feedback-panel">
+        <h3>${escapeHtml(selectedPlayer.name)}</h3>
+        <p class="helper">Tap a category each time you notice it during the game.</p>
+        <div class="feedback-category-grid">${categoryButtons}</div>
+      </article>
+
+      <article class="feedback-panel">
+        <h3>Quick Note</h3>
+        <label>
+          Match Note
+          <textarea id="feedback-note-input" rows="4" placeholder="Example: Strong chase in quarter 2 and set up a goal."></textarea>
+        </label>
+        <div class="inline-actions">
+          <button id="add-feedback-note-btn" type="button">Add Note</button>
+          <button id="clear-player-feedback-btn" type="button">Clear Player Feedback</button>
+        </div>
+        <ul class="feedback-note-list">${notesList}</ul>
+      </article>
+    </div>
+
+    <article class="feedback-panel">
+      <h3>Suggested Feedback For ${escapeHtml(selectedPlayer.name)}</h3>
+      <p id="feedback-summary-text" class="feedback-summary-text">${escapeHtml(summaryText)}</p>
+    </article>
+
+    <article class="summary-card">
+      <h3>Feedback Snapshot</h3>
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Marks</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>${snapshotRows}</tbody>
+      </table>
+    </article>
+  `;
+
+  bindFeedbackTrackerEvents();
+}
+
+function bindFeedbackTrackerEvents() {
+  elements.feedbackTracker.querySelectorAll("[data-player-select]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.feedback.selectedPlayerId = button.dataset.playerSelect;
+      saveState();
+      renderFeedbackTracker();
+    });
+  });
+
+  elements.feedbackTracker.querySelectorAll("[data-category-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      addFeedbackMark(button.dataset.categoryId);
+    });
+  });
+
+  const addNoteButton = elements.feedbackTracker.querySelector("#add-feedback-note-btn");
+  const clearFeedbackButton = elements.feedbackTracker.querySelector("#clear-player-feedback-btn");
+
+  if (addNoteButton) {
+    addNoteButton.addEventListener("click", addFeedbackNote);
+  }
+
+  if (clearFeedbackButton) {
+    clearFeedbackButton.addEventListener("click", clearSelectedPlayerFeedback);
+  }
+}
+
+function addFeedbackMark(categoryId) {
+  const playerId = state.feedback.selectedPlayerId;
+  if (!playerId) {
+    return;
+  }
+
+  const feedback = getPlayerFeedback(playerId);
+  feedback.counts[categoryId] = (feedback.counts[categoryId] || 0) + 1;
+  saveState();
+  renderFeedbackTracker();
+}
+
+function addFeedbackNote() {
+  const playerId = state.feedback.selectedPlayerId;
+  const noteInput = elements.feedbackTracker.querySelector("#feedback-note-input");
+
+  if (!playerId || !noteInput) {
+    return;
+  }
+
+  const note = noteInput.value.trim();
+  if (!note) {
+    return;
+  }
+
+  const feedback = getPlayerFeedback(playerId);
+  feedback.notes.push(note);
+  noteInput.value = "";
+  saveState();
+  renderFeedbackTracker();
+}
+
+function clearSelectedPlayerFeedback() {
+  const playerId = state.feedback.selectedPlayerId;
+
+  if (!playerId) {
+    return;
+  }
+
+  const confirmed = window.confirm("Clear all feedback for this player?");
+  if (!confirmed) {
+    return;
+  }
+
+  state.feedback.byPlayerId[playerId] = createEmptyFeedbackRecord();
+  saveState();
+  renderFeedbackTracker();
+}
+
+function copySelectedFeedbackSummary() {
+  const playerId = state.feedback.selectedPlayerId;
+  if (!playerId) {
+    return;
+  }
+
+  const selectedPlayer = state.players.find((player) => player.id === playerId);
+  if (!selectedPlayer) {
+    return;
+  }
+
+  const summary = buildFeedbackSummary(selectedPlayer, getPlayerFeedback(playerId));
+  if (!navigator.clipboard || !summary) {
+    return;
+  }
+
+  navigator.clipboard.writeText(summary).catch((error) => {
+    console.error("Could not copy feedback summary.", error);
+  });
+}
+
+function getPlayerFeedback(playerId) {
+  if (!state.feedback.byPlayerId[playerId]) {
+    state.feedback.byPlayerId[playerId] = createEmptyFeedbackRecord();
+  }
+
+  const feedback = state.feedback.byPlayerId[playerId];
+  FEEDBACK_CATEGORIES.forEach((category) => {
+    if (typeof feedback.counts[category.id] !== "number") {
+      feedback.counts[category.id] = 0;
+    }
+  });
+
+  if (!Array.isArray(feedback.notes)) {
+    feedback.notes = [];
+  }
+
+  return feedback;
+}
+
+function createEmptyFeedbackRecord() {
+  const counts = {};
+  FEEDBACK_CATEGORIES.forEach((category) => {
+    counts[category.id] = 0;
+  });
+
+  return {
+    counts,
+    notes: [],
+  };
+}
+
+function getTotalFeedbackMarks(feedback) {
+  return FEEDBACK_CATEGORIES.reduce((total, category) => total + (feedback.counts[category.id] || 0), 0);
+}
+
+function buildFeedbackSummary(player, feedback) {
+  const rankedCategories = FEEDBACK_CATEGORIES
+    .map((category) => ({
+      ...category,
+      count: feedback.counts[category.id] || 0,
+    }))
+    .filter((category) => category.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  const summaryParts = [];
+
+  rankedCategories.slice(0, 3).forEach((category, index) => {
+    const promptIndex = Math.min(category.count - 1, category.prompts.length - 1);
+    const sentence = category.prompts[promptIndex] || category.prompts[index] || category.prompts[0];
+    summaryParts.push(sentence);
+  });
+
+  if (!summaryParts.length && !feedback.notes.length) {
+    return `No feedback recorded yet for ${player.name}.`;
+  }
+
+  if (feedback.notes.length) {
+    const noteSummary = feedback.notes.slice(-2).join(" ");
+    summaryParts.push(`Match notes: ${noteSummary}`);
+  }
+
+  return `${player.name}: ${summaryParts.join(" ")}`;
 }
 
 function bindSwapButtons() {
@@ -713,6 +1077,7 @@ function saveState() {
   const payload = JSON.stringify({
     players: state.players,
     settings: state.settings,
+    feedback: state.feedback,
   });
   window.localStorage.setItem(STORAGE_KEY, payload);
 }
@@ -730,6 +1095,10 @@ function loadState() {
     state.settings = {
       ...state.settings,
       ...(parsedState.settings || {}),
+    };
+    state.feedback = {
+      selectedPlayerId: parsedState.feedback?.selectedPlayerId || null,
+      byPlayerId: parsedState.feedback?.byPlayerId || {},
     };
   } catch (error) {
     console.error("Could not load saved app data.", error);

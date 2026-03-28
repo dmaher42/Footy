@@ -1684,8 +1684,9 @@ function renderRotationBoardPlayer(player, group, periodIndex, isSelected) {
 
 function renderFieldBoard(activePeriod) {
   const groupedLines = buildFieldLines(activePeriod.onField);
+  const populatedLines = groupedLines.filter((line) => line.players.length);
 
-  if (!groupedLines.some((line) => line.players.length) || groupedLines.every((line) => line.name === "Utility")) {
+  if (!populatedLines.length || (populatedLines.length === 1 && populatedLines[0].name === "Utility")) {
     return `
       <div class="player-board field-board">
         ${activePeriod.onField
@@ -1697,8 +1698,7 @@ function renderFieldBoard(activePeriod) {
 
   return `
     <div class="field-lines">
-      ${groupedLines
-        .filter((line) => line.players.length)
+      ${populatedLines
         .map((line) => `
           <section class="field-line">
             <div class="field-line-header">

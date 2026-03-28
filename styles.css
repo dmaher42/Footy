@@ -511,6 +511,31 @@ th {
   gap: 1rem;
 }
 
+.period-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.period-tabs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}
+
+.period-tab {
+  white-space: nowrap;
+  background: rgba(18, 102, 79, 0.08);
+  border: 1px solid rgba(18, 102, 79, 0.12);
+}
+
+.period-tab.active {
+  background: var(--primary);
+  color: #fff;
+}
+
 .rotation-card,
 .summary-card {
   border: 1px solid var(--border);
@@ -523,6 +548,44 @@ th {
 .summary-card h3 {
   margin-top: 0;
   margin-bottom: 0.85rem;
+}
+
+.focus-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.focus-card-header {
+  align-items: center;
+}
+
+.rotation-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.rotation-column {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1rem;
+  background: var(--surface);
+}
+
+.rotation-column h4 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.rotation-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.rotation-name {
+  line-height: 1.45;
 }
 
 .swap-controls {
@@ -656,6 +719,11 @@ th {
 
   .feedback-grid,
   .feedback-category-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .period-toolbar,
+  .rotation-columns {
     grid-template-columns: 1fr;
   }
 

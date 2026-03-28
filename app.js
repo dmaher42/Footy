@@ -121,6 +121,8 @@ let isSetupOpen = false;
 let activeGameView = "rotation";
 let isLiveFeedbackMode = true;
 let liveFeedbackPage = 0;
+let activeRotationPeriod = 0;
+let showRotationSummary = false;
 let serviceWorkerRegistration = null;
 let waitingServiceWorker = null;
 let shouldReloadForUpdate = false;
@@ -504,55 +506,28 @@ function renderRotation() {
     elements.rotationOutput.innerHTML = `<p class="placeholder">${placeholderText}</p>`;
     return;
   }
-
-  const periodCards = rotationPlan.periods
-    .map((period) => {
-      const onFieldItems = period.onField.map(renderPlayerPill).join("");
-      const benchItems = period.bench.length
-        ? period.bench.map((player) => renderPlayerPill(player, true)).join("")
-        : '<li class="muted">No bench this period.</li>';
-      const onFieldOptions = period.onField
-        .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)}</option>`)
-        .join("");
-      const benchOptions = period.bench
-        .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)}</option>`)
-        .join("");
-      const swapControls = period.bench.length
-        ? `
-          <div class="swap-controls">
-            <p class="swap-title"><strong>Manual Swap</strong></p>
-            <div class="swap-grid">
-              <label>
-                Field Player
-                <select class="swap-field-select" data-period-index="${period.index}">
-                  ${onFieldOptions}
-                </select>
-              </label>
-              <label>
-                Bench Player
-                <select class="swap-bench-select" data-period-index="${period.index}">
-                  ${benchOptions}
-                </select>
-              </label>
-            </div>
-            <button class="swap-btn" type="button" data-period-index="${period.index}">Swap Players</button>
-          </div>
-        `
-        : '<p class="muted">No bench players available to swap in this period.</p>';
-
-      return `
-        <article class="rotation-card">
-          <h3>${escapeHtml(period.label)}</h3>
-          <p><strong>On Field</strong></p>
-          <ul class="pill-list">${onFieldItems}</ul>
-          <p><strong>Bench</strong></p>
-          <ul class="pill-list">${benchItems}</ul>
-          ${swapControls}
-        </article>
-      `;
-    })
+  activeRotationPeriod = Math.min(activeRotationPeriod, rotationPlan.periods.length - 1);
+  const activePeriod = rotationPlan.periods[activeRotationPeriod];
+  const periodButtons = rotationPlan.periods
+    .map((period, index) => `
+      <button class="period-tab ${index === activeRotationPeriod ? "active" : ""}" type="button" data-period-tab="${index}">
+        ${escapeHtml(period.label)}
+      </button>
+    `)
     .join("");
 
+  const onFieldItems = activePeriod.onField
+    .map((player) => `<li class="rotation-name">${escapeHtml(player.name)}${player.preferredPosition ? ` <span class="muted">(${escapeHtml(player.preferredPosition)})</span>` : ""}</li>`)
+    .join("");
+  const benchItems = activePeriod.bench.length
+    ? activePeriod.bench.map((player) => `<li class="rotation-name">${escapeHtml(player.name)}${player.preferredPosition ? ` <span class="muted">(${escapeHtml(player.preferredPosition)})</span>` : ""}</li>`).join("")
+    : '<li class="muted">No bench this period.</li>';
+  const onFieldOptions = activePeriod.onField
+    .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)}</option>`)
+    .join("");
+  const benchOptions = activePeriod.bench
+    .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)}</option>`)
+    .join("");
   const summaryRows = rotationPlan.summary
     .map((player) => `
       <tr>
@@ -562,25 +537,107 @@ function renderRotation() {
       </tr>
     `)
     .join("");
+  const swapControls = activePeriod.bench.length
+    ? `
+      <div class="swap-controls">
+        <p class="swap-title"><strong>Manual Swap</strong></p>
+        <div class="swap-grid">
+          <label>
+            Field Player
+            <select class="swap-field-select" data-period-index="${activePeriod.index}">
+              ${onFieldOptions}
+            </select>
+          </label>
+          <label>
+            Bench Player
+            <select class="swap-bench-select" data-period-index="${activePeriod.index}">
+              ${benchOptions}
+            </select>
+          </label>
+        </div>
+        <button class="swap-btn" type="button" data-period-index="${activePeriod.index}">Swap Players</button>
+      </div>
+    `
+    : '<p class="muted">No bench players available to swap in this period.</p>';
 
   elements.rotationOutput.innerHTML = `
-    <div class="rotation-grid">${periodCards}</div>
-    <article class="summary-card">
-      <h3>Player Summary</h3>
-      <table class="summary-table">
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th>On Field</th>
-            <th>Bench</th>
-          </tr>
-        </thead>
-        <tbody>${summaryRows}</tbody>
-      </table>
+    <div class="period-toolbar">
+      <button type="button" data-period-shift="-1" ${activeRotationPeriod === 0 ? "disabled" : ""}>Previous</button>
+      <div class="period-tabs">${periodButtons}</div>
+      <button type="button" data-period-shift="1" ${activeRotationPeriod === rotationPlan.periods.length - 1 ? "disabled" : ""}>Next</button>
+    </div>
+
+    <article class="rotation-card focus-card">
+      <div class="section-heading focus-card-header">
+        <div>
+          <h3>${escapeHtml(activePeriod.label)}</h3>
+          <p class="helper">Focus on one period at a time.</p>
+        </div>
+        <button type="button" id="toggle-rotation-summary-btn">${showRotationSummary ? "Hide Totals" : "Show Totals"}</button>
+      </div>
+
+      <div class="rotation-columns">
+        <section class="rotation-column">
+          <h4>On Field</h4>
+          <ol class="rotation-list">${onFieldItems}</ol>
+        </section>
+        <section class="rotation-column">
+          <h4>Bench</h4>
+          <ol class="rotation-list">${benchItems}</ol>
+        </section>
+      </div>
+
+      ${swapControls}
     </article>
+
+    ${showRotationSummary ? `
+      <article class="summary-card">
+        <h3>Player Totals</h3>
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>On Field</th>
+              <th>Bench</th>
+            </tr>
+          </thead>
+          <tbody>${summaryRows}</tbody>
+        </table>
+      </article>
+    ` : ""}
   `;
 
   bindSwapButtons();
+  bindRotationControls();
+}
+
+function bindRotationControls() {
+  elements.rotationOutput.querySelectorAll("[data-period-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      activeRotationPeriod = Number.parseInt(button.dataset.periodTab, 10);
+      renderRotation();
+    });
+  });
+
+  elements.rotationOutput.querySelectorAll("[data-period-shift]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextIndex = activeRotationPeriod + Number.parseInt(button.dataset.periodShift, 10);
+      if (nextIndex < 0 || nextIndex >= currentRotationPlan.periods.length) {
+        return;
+      }
+
+      activeRotationPeriod = nextIndex;
+      renderRotation();
+    });
+  });
+
+  const toggleSummaryButton = elements.rotationOutput.querySelector("#toggle-rotation-summary-btn");
+  if (toggleSummaryButton) {
+    toggleSummaryButton.addEventListener("click", () => {
+      showRotationSummary = !showRotationSummary;
+      renderRotation();
+    });
+  }
 }
 
 function buildRotationPlan() {

@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.28.10";
+const APP_VERSION = "2026.03.28.11";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -79,6 +79,7 @@ const state = {
   },
   feedback: {
     selectedPlayerId: null,
+    currentQuarter: 1,
     byPlayerId: {},
   },
 };
@@ -430,6 +431,7 @@ function clearAllPlayers() {
   state.players = [];
   state.feedback = {
     selectedPlayerId: null,
+    currentQuarter: 1,
     byPlayerId: {},
   };
   currentRotationPlan = null;
@@ -657,8 +659,12 @@ function bindRotationControls() {
   elements.rotationOutput.querySelectorAll("[data-period-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       activeRotationPeriod = Number.parseInt(button.dataset.periodTab, 10);
+      state.feedback.currentQuarter = activeRotationPeriod + 1;
+      saveState();
       clearRotationSelection();
       renderRotation();
+      renderFeedbackTracker();
+      renderPostGameReport();
     });
   });
 
@@ -939,14 +945,17 @@ function renderFeedbackTracker() {
     return;
   }
 
+  const selectedQuarter = getSelectedFeedbackQuarter();
+  const selectedQuarterLabel = getFeedbackQuarterLabel(selectedQuarter);
   const selectedPlayer = availablePlayers.find((player) => player.id === state.feedback.selectedPlayerId) || availablePlayers[0];
   state.feedback.selectedPlayerId = selectedPlayer.id;
 
-  const selectedFeedback = getPlayerFeedback(selectedPlayer.id);
+  const selectedFeedback = getPlayerQuarterFeedback(selectedPlayer.id, selectedQuarter);
   const selectedIndex = availablePlayers.findIndex((player) => player.id === selectedPlayer.id);
   const playerOptions = availablePlayers
     .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)}</option>`)
     .join("");
+  const quarterTabs = buildFeedbackQuarterTabs("data-feedback-quarter");
 
   const categoryButtons = FEEDBACK_CATEGORIES
     .map((category) => `
@@ -975,6 +984,11 @@ function renderFeedbackTracker() {
     .join("");
 
   elements.feedbackTracker.innerHTML = `
+    <div class="feedback-quarter-row">
+      <p class="helper quarter-label">Recording for ${escapeHtml(selectedQuarterLabel)}</p>
+      <div class="period-tabs feedback-quarter-tabs">${quarterTabs}</div>
+    </div>
+
     <div class="feedback-player-switcher">
       <button type="button" data-player-shift="-1" ${selectedIndex <= 0 ? "disabled" : ""}>Previous</button>
       <label class="player-select-wrap">
@@ -988,7 +1002,7 @@ function renderFeedbackTracker() {
       <div class="section-heading live-feedback-header">
         <div>
           <h3>${escapeHtml(selectedPlayer.name)}</h3>
-          <p class="helper">Tap a category each time you notice it during the game.</p>
+          <p class="helper">Tap a category each time you notice it in ${escapeHtml(selectedQuarterLabel)}.</p>
         </div>
         <span class="live-count-pill">${getTotalFeedbackMarks(selectedFeedback)} marks</span>
       </div>
@@ -1010,7 +1024,7 @@ function renderFeedbackTracker() {
     </article>
 
     <article class="feedback-panel">
-      <h3>Summary</h3>
+      <h3>${escapeHtml(selectedQuarterLabel)} Summary</h3>
       <p id="feedback-summary-text" class="feedback-summary-text">${escapeHtml(summaryText)}</p>
     </article>
   `;
@@ -1024,6 +1038,15 @@ function renderFeedbackTracker() {
 }
 
 function bindFeedbackTrackerEvents() {
+  elements.feedbackTracker.querySelectorAll("[data-feedback-quarter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.feedback.currentQuarter = Number.parseInt(button.dataset.feedbackQuarter, 10);
+      saveState();
+      renderFeedbackTracker();
+      renderPostGameReport();
+    });
+  });
+
   const playerSelect = elements.feedbackTracker.querySelector("#feedback-player-select");
   if (playerSelect) {
     playerSelect.addEventListener("change", () => {
@@ -1064,7 +1087,7 @@ function addFeedbackMark(categoryId) {
     return;
   }
 
-  const feedback = getPlayerFeedback(playerId);
+  const feedback = getPlayerQuarterFeedback(playerId, getSelectedFeedbackQuarter());
   feedback.counts[categoryId] = (feedback.counts[categoryId] || 0) + 1;
   saveState();
   renderFeedbackTracker();
@@ -1103,7 +1126,7 @@ function addFeedbackNote() {
     return;
   }
 
-  const feedback = getPlayerFeedback(playerId);
+  const feedback = getPlayerQuarterFeedback(playerId, getSelectedFeedbackQuarter());
   feedback.notes.push(note);
   noteInput.value = "";
   saveState();
@@ -1113,17 +1136,20 @@ function addFeedbackNote() {
 
 function clearSelectedPlayerFeedback() {
   const playerId = state.feedback.selectedPlayerId;
+  const selectedQuarter = getSelectedFeedbackQuarter();
+  const selectedQuarterLabel = getFeedbackQuarterLabel(selectedQuarter);
 
   if (!playerId) {
     return;
   }
 
-  const confirmed = window.confirm("Clear all feedback for this player?");
+  const confirmed = window.confirm(`Clear all feedback for this player in ${selectedQuarterLabel}?`);
   if (!confirmed) {
     return;
   }
 
-  state.feedback.byPlayerId[playerId] = createEmptyFeedbackRecord();
+  const feedbackRecord = getPlayerFeedbackRecord(playerId);
+  feedbackRecord.byQuarter[String(selectedQuarter)] = createEmptyQuarterFeedbackRecord();
   saveState();
   renderFeedbackTracker();
   renderPostGameReport();
@@ -1140,7 +1166,12 @@ function copySelectedFeedbackSummary() {
     return;
   }
 
-  const summary = buildFeedbackSummary(selectedPlayer, getPlayerFeedback(playerId));
+  const selectedQuarter = getSelectedFeedbackQuarter();
+  const summary = buildFeedbackSummary(
+    selectedPlayer,
+    getPlayerQuarterFeedback(playerId, selectedQuarter),
+    getFeedbackQuarterLabel(selectedQuarter)
+  );
   if (!navigator.clipboard || !summary) {
     return;
   }
@@ -1150,26 +1181,92 @@ function copySelectedFeedbackSummary() {
   });
 }
 
-function getPlayerFeedback(playerId) {
+function getPlayerFeedbackRecord(playerId) {
   if (!state.feedback.byPlayerId[playerId]) {
     state.feedback.byPlayerId[playerId] = createEmptyFeedbackRecord();
   }
 
-  const feedback = state.feedback.byPlayerId[playerId];
+  return normalizeFeedbackRecord(state.feedback.byPlayerId[playerId]);
+}
+
+function getPlayerQuarterFeedback(playerId, quarterNumber) {
+  const feedbackRecord = getPlayerFeedbackRecord(playerId);
+  const quarterKey = String(quarterNumber);
+
+  if (!feedbackRecord.byQuarter[quarterKey]) {
+    feedbackRecord.byQuarter[quarterKey] = createEmptyQuarterFeedbackRecord();
+  }
+
+  const quarterFeedback = feedbackRecord.byQuarter[quarterKey];
   FEEDBACK_CATEGORIES.forEach((category) => {
-    if (typeof feedback.counts[category.id] !== "number") {
-      feedback.counts[category.id] = 0;
+    if (typeof quarterFeedback.counts[category.id] !== "number") {
+      quarterFeedback.counts[category.id] = 0;
     }
   });
 
-  if (!Array.isArray(feedback.notes)) {
-    feedback.notes = [];
+  if (!Array.isArray(quarterFeedback.notes)) {
+    quarterFeedback.notes = [];
   }
 
-  return feedback;
+  return quarterFeedback;
+}
+
+function getPlayerFeedback(playerId) {
+  const feedbackRecord = getPlayerFeedbackRecord(playerId);
+  const aggregate = createEmptyQuarterFeedbackRecord();
+
+  Object.keys(feedbackRecord.byQuarter)
+    .sort((a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10))
+    .forEach((quarterKey) => {
+      const quarterNumber = Number.parseInt(quarterKey, 10);
+      const quarterFeedback = getPlayerQuarterFeedback(playerId, quarterNumber);
+
+      FEEDBACK_CATEGORIES.forEach((category) => {
+        aggregate.counts[category.id] += quarterFeedback.counts[category.id] || 0;
+      });
+
+      if (quarterFeedback.notes.length) {
+        const quarterLabel = getFeedbackQuarterLabel(quarterNumber);
+        aggregate.notes.push(...quarterFeedback.notes.map((note) => `${quarterLabel}: ${note}`));
+      }
+    });
+
+  return aggregate;
+}
+
+function normalizeFeedbackRecord(feedbackRecord) {
+  const normalizedRecord = feedbackRecord && typeof feedbackRecord === "object"
+    ? feedbackRecord
+    : createEmptyFeedbackRecord();
+
+  if (!normalizedRecord.byQuarter) {
+    const migratedQuarter = createEmptyQuarterFeedbackRecord();
+
+    if (normalizedRecord.counts && typeof normalizedRecord.counts === "object") {
+      FEEDBACK_CATEGORIES.forEach((category) => {
+        migratedQuarter.counts[category.id] = normalizedRecord.counts[category.id] || 0;
+      });
+    }
+
+    if (Array.isArray(normalizedRecord.notes)) {
+      migratedQuarter.notes = [...normalizedRecord.notes];
+    }
+
+    normalizedRecord.byQuarter = {
+      "1": migratedQuarter,
+    };
+  }
+
+  return normalizedRecord;
 }
 
 function createEmptyFeedbackRecord() {
+  return {
+    byQuarter: {},
+  };
+}
+
+function createEmptyQuarterFeedbackRecord() {
   const counts = {};
   FEEDBACK_CATEGORIES.forEach((category) => {
     counts[category.id] = 0;
@@ -1185,7 +1282,7 @@ function getTotalFeedbackMarks(feedback) {
   return FEEDBACK_CATEGORIES.reduce((total, category) => total + (feedback.counts[category.id] || 0), 0);
 }
 
-function buildFeedbackSummary(player, feedback) {
+function buildFeedbackSummary(player, feedback, contextLabel = "") {
   const rankedCategories = FEEDBACK_CATEGORIES
     .map((category) => ({
       ...category,
@@ -1203,7 +1300,9 @@ function buildFeedbackSummary(player, feedback) {
   });
 
   if (!summaryParts.length && !feedback.notes.length) {
-    return `No feedback recorded yet for ${player.name}.`;
+    return contextLabel
+      ? `No feedback recorded yet for ${player.name} in ${contextLabel}.`
+      : `No feedback recorded yet for ${player.name}.`;
   }
 
   if (feedback.notes.length) {
@@ -1214,15 +1313,128 @@ function buildFeedbackSummary(player, feedback) {
   return `${player.name}: ${summaryParts.join(" ")}`;
 }
 
+function getSelectedFeedbackQuarter() {
+  const maxQuarter = normalizePositiveNumber(state.settings.periodCount, 4);
+  const quarter = normalizePositiveNumber(state.feedback.currentQuarter, 1);
+  const clampedQuarter = Math.min(Math.max(quarter, 1), maxQuarter);
+  state.feedback.currentQuarter = clampedQuarter;
+  return clampedQuarter;
+}
+
+function getFeedbackQuarterLabel(quarterNumber) {
+  return `${normalizePeriodLabel(state.settings.periodLabel)} ${quarterNumber}`;
+}
+
+function buildFeedbackQuarterTabs(attributeName) {
+  const selectedQuarter = getSelectedFeedbackQuarter();
+  const periodCount = normalizePositiveNumber(state.settings.periodCount, 4);
+
+  return Array.from({ length: periodCount }, (_, index) => {
+    const quarterNumber = index + 1;
+    const label = getFeedbackQuarterLabel(quarterNumber);
+    return `
+      <button
+        class="period-tab ${quarterNumber === selectedQuarter ? "active" : ""}"
+        type="button"
+        ${attributeName}="${quarterNumber}"
+      >
+        ${escapeHtml(label)}
+      </button>
+    `;
+  }).join("");
+}
+
 function renderPostGameReport() {
+  const selectedQuarter = getSelectedFeedbackQuarter();
+  const quarterEntries = buildQuarterReportEntries(selectedQuarter);
   const reportEntries = buildPostGameReportEntries();
 
-  if (!reportEntries.length) {
+  if (!quarterEntries.length && !reportEntries.length) {
     elements.postGameReport.innerHTML = '<p class="placeholder">Track some player feedback during the game to build a post-game report.</p>';
     return;
   }
 
-  const reportCards = reportEntries
+  const quarterTabs = buildFeedbackQuarterTabs("data-report-quarter");
+  const quarterSummaryCards = quarterEntries.length
+    ? renderReportCards(quarterEntries, false)
+    : '<p class="placeholder">No feedback recorded yet for this quarter.</p>';
+  const fullReportCards = reportEntries.length
+    ? renderReportCards(reportEntries, true)
+    : '<p class="placeholder">Track some player feedback during the game to build a post-game report.</p>';
+
+  elements.postGameReport.innerHTML = `
+    <article class="feedback-panel">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>${escapeHtml(getFeedbackQuarterLabel(selectedQuarter))} Summary</h3>
+          <p class="helper">Use this at the break to speak to players quickly.</p>
+        </div>
+      </div>
+      <div class="period-tabs feedback-quarter-tabs">${quarterTabs}</div>
+      <div class="report-grid">${quarterSummaryCards}</div>
+    </article>
+
+    <article class="feedback-panel">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>Full Game Report</h3>
+          <p class="helper">This combines all quarter feedback for each player.</p>
+        </div>
+      </div>
+      <div class="report-grid">${fullReportCards}</div>
+    </article>
+  `;
+
+  elements.postGameReport.querySelectorAll("[data-report-quarter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.feedback.currentQuarter = Number.parseInt(button.dataset.reportQuarter, 10);
+      saveState();
+      renderFeedbackTracker();
+      renderPostGameReport();
+    });
+  });
+
+  elements.postGameReport.querySelectorAll("[data-copy-player-report]").forEach((button) => {
+    button.addEventListener("click", () => {
+      copyPlayerReport(button.dataset.copyPlayerReport);
+    });
+  });
+}
+
+function buildQuarterReportEntries(quarterNumber) {
+  const quarterLabel = getFeedbackQuarterLabel(quarterNumber);
+
+  return state.players
+    .filter((player) => player.name)
+    .map((player) => {
+      const feedback = getPlayerQuarterFeedback(player.id, quarterNumber);
+      const totalMarks = getTotalFeedbackMarks(feedback);
+      const summary = buildFeedbackSummary(player, feedback, quarterLabel);
+
+      return {
+        playerId: player.id,
+        playerName: player.name,
+        totalMarks,
+        noteCount: feedback.notes.length,
+        summary,
+      };
+    })
+    .filter((entry) => entry.totalMarks > 0 || !entry.summary.startsWith("No feedback recorded yet"))
+    .sort((a, b) => {
+      if (b.totalMarks !== a.totalMarks) {
+        return b.totalMarks - a.totalMarks;
+      }
+
+      if (b.noteCount !== a.noteCount) {
+        return b.noteCount - a.noteCount;
+      }
+
+      return a.playerName.localeCompare(b.playerName);
+    });
+}
+
+function renderReportCards(entries, includeCopyButtons) {
+  return entries
     .map((entry) => `
       <article class="feedback-panel report-card">
         <div class="section-heading report-card-header">
@@ -1230,20 +1442,12 @@ function renderPostGameReport() {
             <h3>${escapeHtml(entry.playerName)}</h3>
             <p class="helper">Marks: ${entry.totalMarks} | Notes: ${entry.noteCount}</p>
           </div>
-          <button type="button" data-copy-player-report="${entry.playerId}">Copy</button>
+          ${includeCopyButtons ? `<button type="button" data-copy-player-report="${entry.playerId}">Copy</button>` : ""}
         </div>
         <p class="feedback-summary-text">${escapeHtml(entry.summary)}</p>
       </article>
     `)
     .join("");
-
-  elements.postGameReport.innerHTML = `<div class="report-grid">${reportCards}</div>`;
-
-  elements.postGameReport.querySelectorAll("[data-copy-player-report]").forEach((button) => {
-    button.addEventListener("click", () => {
-      copyPlayerReport(button.dataset.copyPlayerReport);
-    });
-  });
 }
 
 function buildPostGameReportEntries() {
@@ -1651,6 +1855,7 @@ function loadState() {
     };
     state.feedback = {
       selectedPlayerId: parsedState.feedback?.selectedPlayerId || null,
+      currentQuarter: parsedState.feedback?.currentQuarter || 1,
       byPlayerId: parsedState.feedback?.byPlayerId || {},
     };
   } catch (error) {

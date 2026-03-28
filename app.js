@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.29.12";
+const APP_VERSION = "2026.03.29.13";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -148,11 +148,20 @@ function bindEvents() {
   elements.addPlayersBtn.addEventListener("click", addPlayersFromBulkInput);
   elements.clearAllBtn.addEventListener("click", clearAllPlayers);
   elements.toggleBenchRulesBtn.addEventListener("click", toggleBenchRulesVisibility);
-  elements.editSetupBtn.addEventListener("click", openSetupPanel);
+  elements.editSetupBtn.addEventListener("click", () => {
+    setUpdateMenuOpen(false);
+    openSetupPanel();
+  });
   elements.closeSetupBtn.addEventListener("click", closeSetupPanel);
   elements.generateCloseBtn.addEventListener("click", refreshPlanAndCloseSetup);
-  elements.generateBtn.addEventListener("click", refreshPlanAndCloseSetup);
-  elements.printBtn.addEventListener("click", () => window.print());
+  elements.generateBtn.addEventListener("click", () => {
+    setUpdateMenuOpen(false);
+    refreshPlanAndCloseSetup();
+  });
+  elements.printBtn.addEventListener("click", () => {
+    setUpdateMenuOpen(false);
+    window.print();
+  });
   elements.setupBackdrop.addEventListener("click", closeSetupPanel);
   elements.checkUpdateBtn.addEventListener("click", checkForAppUpdate);
   elements.applyUpdateBtn.addEventListener("click", applyAppUpdate);

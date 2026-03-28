@@ -1,4 +1,4 @@
-const ASSET_VERSION = "2026.03.29.12";
+const ASSET_VERSION = "2026.03.29.13";
 const CACHE_NAME = `footy-player-manager-v5-${ASSET_VERSION}`;
 const APP_SHELL = [
   "./",

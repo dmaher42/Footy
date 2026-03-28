@@ -8,12 +8,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Footy Manager">
-  <meta name="app-version" content="2026.03.29.7">
+  <meta name="app-version" content="2026.03.29.8">
   <title>Footy Player Manager</title>
-  <link rel="manifest" href="manifest.json?v=2026.03.29.7">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2026.03.29.7">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2026.03.29.7">
-  <link rel="stylesheet" href="styles.css?v=2026.03.29.7">
+  <link rel="manifest" href="manifest.json?v=2026.03.29.8">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2026.03.29.8">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2026.03.29.8">
+  <link rel="stylesheet" href="styles.css?v=2026.03.29.8">
 </head>
 <body>
   <div class="page">
@@ -119,9 +119,13 @@
         </section>
 
         <div class="setup-panel-actions">
-          <button id="check-update-btn" type="button">Check for Update</button>
-          <button id="print-btn" type="button">Print / Save PDF</button>
-          <button id="generate-close-btn" class="primary" type="button">Generate And Close</button>
+          <div class="setup-panel-utilities">
+            <button id="check-update-btn" class="utility-btn" type="button">Check for Update</button>
+          </div>
+          <div class="setup-panel-primary-actions">
+            <button id="print-btn" type="button">Print / Save PDF</button>
+            <button id="generate-close-btn" class="primary" type="button">Generate And Close</button>
+          </div>
         </div>
       </div>
     </aside>
@@ -198,6 +202,6 @@
     </tr>
   </template>
 
-  <script src="app.js?v=2026.03.29.7"></script>
+  <script src="app.js?v=2026.03.29.8"></script>
 </body>
 </html>

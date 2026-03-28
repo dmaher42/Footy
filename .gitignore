@@ -1,0 +1,9 @@
+# OS files
+desktop.ini
+Thumbs.db
+
+# Local editor files
+.DS_Store
+
+# Optional local servers
+node_modules/

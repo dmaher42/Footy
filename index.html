@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#12664f">
+  <meta name="description" content="Footy Player Manager for planning rotations and bench changes.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Footy Manager">
+  <title>Footy Player Manager</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Trial Game Planner</p>
+        <h1>Footy Player Manager</h1>
+        <p class="hero-copy">
+          Add your squad, choose how many players are on the field, and generate a fair rotation plan for tomorrow's game.
+        </p>
+      </div>
+      <div class="hero-actions mobile-action-bar">
+        <button id="generate-btn" class="primary">Generate Rotation</button>
+        <button id="print-btn" type="button">Print / Save PDF</button>
+      </div>
+    </header>
+
+    <section class="status-strip" aria-label="App notes">
+      <div class="status-pill">
+        Personal use only. No accounts or team logins are built in.
+      </div>
+      <div class="status-pill">
+        Your player list stays in this browser on this device.
+      </div>
+    </section>
+
+    <main class="layout">
+      <section class="card">
+        <h2>Match Settings</h2>
+        <div class="form-grid">
+          <label>
+            Period Label
+            <input id="period-label" type="text" value="Quarter" maxlength="20">
+          </label>
+          <label>
+            Number of Periods
+            <input id="period-count" type="number" min="1" max="12" value="4">
+          </label>
+          <label>
+            Players On Field
+            <input id="players-on-field" type="number" min="1" max="30" value="18">
+          </label>
+        </div>
+        <p class="helper">
+          Example: If you have 22 players and 18 on the field, the app will rotate 4 players to the bench each period. You can lock players on field, bench some players first, and limit how many times a player can be benched.
+        </p>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>Squad List</h2>
+            <p class="helper">Paste one player per line for the fastest setup.</p>
+          </div>
+          <button id="clear-all-btn" type="button" class="danger-text">Clear All Players</button>
+        </div>
+
+        <label class="full-width">
+          Quick Add Players
+          <textarea id="bulk-player-input" rows="6" placeholder="Jack Smith&#10;Noah Brown&#10;Liam Jones"></textarea>
+        </label>
+        <div class="inline-actions">
+          <button id="add-players-btn" type="button">Add Players</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Preferred Position</th>
+                <th>Available</th>
+                <th>Can Bench</th>
+                <th>Bench First</th>
+                <th>Max Bench</th>
+                <th>Remove</th>
+              </tr>
+            </thead>
+            <tbody id="player-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Rotation Plan</h2>
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <div id="rotation-output" class="rotation-output">
+          <p class="placeholder">Add players, then press <strong>Generate Rotation</strong>.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="player-row-template">
+    <tr>
+      <td data-label="Name">
+        <input class="player-name" type="text" placeholder="Player name">
+      </td>
+      <td data-label="Preferred Position">
+        <input class="player-position" type="text" placeholder="Back, Mid, Forward...">
+      </td>
+      <td class="checkbox-cell" data-label="Available">
+        <input class="player-active" type="checkbox" checked>
+      </td>
+      <td class="checkbox-cell" data-label="Can Bench">
+        <input class="player-can-bench" type="checkbox" checked>
+      </td>
+      <td class="checkbox-cell" data-label="Bench First">
+        <input class="player-bench-first" type="checkbox">
+      </td>
+      <td class="max-bench-cell" data-label="Max Bench">
+        <input class="player-max-bench" type="number" min="0" max="12" placeholder="No limit">
+      </td>
+      <td class="checkbox-cell" data-label="Remove">
+        <button class="remove-player-btn" type="button">Remove</button>
+      </td>
+    </tr>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>

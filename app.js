@@ -94,7 +94,6 @@ const elements = {
   addPlayersBtn: document.querySelector("#add-players-btn"),
   clearAllBtn: document.querySelector("#clear-all-btn"),
   editSetupBtn: document.querySelector("#edit-setup-btn"),
-  editSetupInlineBtn: document.querySelector("#edit-setup-inline-btn"),
   closeSetupBtn: document.querySelector("#close-setup-btn"),
   generateCloseBtn: document.querySelector("#generate-close-btn"),
   generateBtn: document.querySelector("#generate-btn"),
@@ -103,6 +102,7 @@ const elements = {
   setupPanel: document.querySelector("#setup-panel"),
   copyFeedbackBtn: document.querySelector("#copy-feedback-btn"),
   copyReportBtn: document.querySelector("#copy-report-btn"),
+  toggleReportBtn: document.querySelector("#toggle-report-btn"),
   feedbackTracker: document.querySelector("#feedback-tracker"),
   postGameReport: document.querySelector("#post-game-report"),
   tableBody: document.querySelector("#player-table-body"),
@@ -113,6 +113,7 @@ const elements = {
 
 let currentRotationPlan = null;
 let isSetupOpen = false;
+let isReportOpen = false;
 let serviceWorkerRegistration = null;
 let waitingServiceWorker = null;
 let shouldReloadForUpdate = false;
@@ -126,7 +127,6 @@ function bindEvents() {
   elements.addPlayersBtn.addEventListener("click", addPlayersFromBulkInput);
   elements.clearAllBtn.addEventListener("click", clearAllPlayers);
   elements.editSetupBtn.addEventListener("click", openSetupPanel);
-  elements.editSetupInlineBtn.addEventListener("click", openSetupPanel);
   elements.closeSetupBtn.addEventListener("click", closeSetupPanel);
   elements.generateCloseBtn.addEventListener("click", refreshPlanAndCloseSetup);
   elements.generateBtn.addEventListener("click", refreshPlanAndCloseSetup);
@@ -136,6 +136,7 @@ function bindEvents() {
   elements.applyUpdateBtn.addEventListener("click", applyAppUpdate);
   elements.copyFeedbackBtn.addEventListener("click", copySelectedFeedbackSummary);
   elements.copyReportBtn.addEventListener("click", copyFullPostGameReport);
+  elements.toggleReportBtn.addEventListener("click", toggleReportVisibility);
 
   elements.periodLabel.addEventListener("input", handleSettingsChange);
   elements.periodCount.addEventListener("input", handleSettingsChange);
@@ -161,13 +162,13 @@ function registerServiceWorker() {
 
       if (registration.waiting) {
         waitingServiceWorker = registration.waiting;
-        showUpdateState("A new version is ready. Tap Refresh App to load it.", true, true);
+        showUpdateState("A new version is ready. Tap Refresh App to load it.", true);
       } else {
-        showUpdateState("Tap Check for Update to look for the latest version.", true, false);
+        showUpdateState("Tap Check for Update inside Edit Setup when you want to look for the latest version.", false);
       }
     }).catch((error) => {
       console.error("Could not register service worker.", error);
-      showUpdateState("Could not set up app updates on this device.", false, false);
+      showUpdateState("Could not set up app updates on this device.", true);
     });
 
     navigator.serviceWorker.addEventListener("controllerchange", () => {
@@ -187,15 +188,15 @@ function monitorServiceWorker(registration) {
       return;
     }
 
-    showUpdateState("Downloading the latest app version...", false, false);
+    showUpdateState("Downloading the latest app version...", true);
 
     newWorker.addEventListener("statechange", () => {
       if (newWorker.state === "installed") {
         if (navigator.serviceWorker.controller) {
           waitingServiceWorker = registration.waiting || newWorker;
-          showUpdateState("A new version is ready. Tap Refresh App to load it.", true, true);
+          showUpdateState("A new version is ready. Tap Refresh App to load it.", true);
         } else {
-          showUpdateState("App is ready on this device.", true, false);
+          showUpdateState("App is ready on this device.", false);
         }
       }
     });
@@ -204,42 +205,41 @@ function monitorServiceWorker(registration) {
 
 function checkForAppUpdate() {
   if (!serviceWorkerRegistration) {
-    showUpdateState("Update checking is not ready yet. Try again in a moment.", true, false);
+    showUpdateState("Update checking is not ready yet. Try again in a moment.", true);
     return;
   }
 
-  showUpdateState("Checking for the latest app version...", false, false);
+  showUpdateState("Checking for the latest app version...", true);
 
   serviceWorkerRegistration.update().then(() => {
     if (serviceWorkerRegistration.waiting) {
       waitingServiceWorker = serviceWorkerRegistration.waiting;
-      showUpdateState("A new version is ready. Tap Refresh App to load it.", true, true);
+      showUpdateState("A new version is ready. Tap Refresh App to load it.", true);
       return;
     }
 
-    showUpdateState("You already have the latest version on this device.", true, false);
+    showUpdateState("You already have the latest version on this device.", false);
   }).catch((error) => {
     console.error("Could not check for app updates.", error);
-    showUpdateState("Could not check for updates right now.", true, false);
+    showUpdateState("Could not check for updates right now.", true);
   });
 }
 
 function applyAppUpdate() {
   if (!waitingServiceWorker) {
-    showUpdateState("No app update is ready yet.", true, false);
+    showUpdateState("No app update is ready yet.", false);
     return;
   }
 
-  showUpdateState("Refreshing to the newest version...", false, false);
+  showUpdateState("Refreshing to the newest version...", true);
   shouldReloadForUpdate = true;
   waitingServiceWorker.postMessage({ type: "SKIP_WAITING" });
 }
 
-function showUpdateState(message, showCheckButton, showApplyButton) {
-  elements.updatePanel.hidden = false;
+function showUpdateState(message, isVisible) {
+  elements.updatePanel.hidden = !isVisible;
   elements.updateText.textContent = message;
-  elements.checkUpdateBtn.hidden = !showCheckButton;
-  elements.applyUpdateBtn.hidden = !showApplyButton;
+  elements.applyUpdateBtn.hidden = !message.includes("Refresh App");
 }
 
 function handleSettingsChange() {
@@ -318,6 +318,7 @@ function clearAllPlayers() {
 function render() {
   syncSettingsInputs();
   syncSetupPanel();
+  syncReportVisibility();
   syncSelectedFeedbackPlayer();
   renderPlayerTable();
   renderRotation();
@@ -731,6 +732,17 @@ function syncSetupPanel() {
   elements.setupPanel.setAttribute("aria-hidden", String(!isSetupOpen));
   elements.setupBackdrop.hidden = !isSetupOpen;
   document.body.classList.toggle("setup-open", isSetupOpen);
+}
+
+function toggleReportVisibility() {
+  isReportOpen = !isReportOpen;
+  syncReportVisibility();
+}
+
+function syncReportVisibility() {
+  elements.postGameReport.hidden = !isReportOpen;
+  elements.toggleReportBtn.textContent = isReportOpen ? "Hide Report" : "Show Report";
+  elements.copyReportBtn.hidden = !isReportOpen;
 }
 
 function syncSelectedFeedbackPlayer() {

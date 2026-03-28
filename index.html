@@ -18,16 +18,15 @@
   <div class="page">
     <header class="hero">
       <div>
-        <p class="eyebrow">Trial Game Planner</p>
+        <p class="eyebrow">Game Day</p>
         <h1>Footy Player Manager</h1>
         <p class="hero-copy">
-          Add your squad, choose how many players are on the field, and generate a fair rotation plan for tomorrow's game.
+          Rotation and feedback in one simple game-day view.
         </p>
       </div>
       <div class="hero-actions mobile-action-bar">
         <button id="edit-setup-btn" type="button">Edit Setup</button>
         <button id="generate-btn" class="primary">Generate Rotation</button>
-        <button id="print-btn" type="button">Print / Save PDF</button>
       </div>
     </header>
 
@@ -37,7 +36,6 @@
         <p id="update-text">Check for the latest version of the app.</p>
       </div>
       <div class="update-actions">
-        <button id="check-update-btn" type="button">Check for Update</button>
         <button id="apply-update-btn" class="primary" type="button" hidden>Refresh App</button>
       </div>
     </section>
@@ -111,6 +109,8 @@
         </section>
 
         <div class="setup-panel-actions">
+          <button id="check-update-btn" type="button">Check for Update</button>
+          <button id="print-btn" type="button">Print / Save PDF</button>
           <button id="generate-close-btn" class="primary" type="button">Generate And Close</button>
         </div>
       </div>
@@ -121,9 +121,8 @@
         <div class="section-heading panel-heading">
           <div>
             <h2>Rotation Plan</h2>
-            <p class="helper">Keep this screen open during the game. Use <strong>Edit Setup</strong> only when you need to change the squad or match settings.</p>
+            <p class="helper">Your main game-day screen.</p>
           </div>
-          <button id="edit-setup-inline-btn" type="button">Edit Setup</button>
         </div>
         <div id="messages" class="messages" aria-live="polite"></div>
         <div id="rotation-output" class="rotation-output">
@@ -135,7 +134,7 @@
         <div class="section-heading panel-heading">
           <div>
             <h2>Player Feedback</h2>
-            <p class="helper">Tap quick categories during the game, add short notes, and use the summary after the match.</p>
+            <p class="helper">Tap quick categories and notes during the game.</p>
           </div>
           <button id="copy-feedback-btn" type="button">Copy Feedback</button>
         </div>
@@ -148,11 +147,14 @@
         <div class="section-heading panel-heading">
           <div>
             <h2>Post-Game Report</h2>
-            <p class="helper">Use your tracked feedback to create a full set of player comments after the game.</p>
+            <p class="helper">Open this after the game when you want the full report.</p>
           </div>
-          <button id="copy-report-btn" type="button">Copy Full Report</button>
+          <div class="inline-actions compact-actions">
+            <button id="toggle-report-btn" type="button">Show Report</button>
+            <button id="copy-report-btn" type="button">Copy Full Report</button>
+          </div>
         </div>
-        <div id="post-game-report" class="post-game-report">
+        <div id="post-game-report" class="post-game-report" hidden>
           <p class="placeholder">Track some player feedback during the game to build a post-game report.</p>
         </div>
       </section>

@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.28.11";
+const APP_VERSION = "2026.03.28.12";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -951,7 +951,6 @@ function renderFeedbackTracker() {
   state.feedback.selectedPlayerId = selectedPlayer.id;
 
   const selectedFeedback = getPlayerQuarterFeedback(selectedPlayer.id, selectedQuarter);
-  const selectedIndex = availablePlayers.findIndex((player) => player.id === selectedPlayer.id);
   const playerOptions = availablePlayers
     .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)}</option>`)
     .join("");
@@ -990,12 +989,10 @@ function renderFeedbackTracker() {
     </div>
 
     <div class="feedback-player-switcher">
-      <button type="button" data-player-shift="-1" ${selectedIndex <= 0 ? "disabled" : ""}>Previous</button>
       <label class="player-select-wrap">
         Player
         <select id="feedback-player-select">${playerOptions}</select>
       </label>
-      <button type="button" data-player-shift="1" ${selectedIndex >= availablePlayers.length - 1 ? "disabled" : ""}>Next</button>
     </div>
 
     <article class="feedback-panel">
@@ -1057,12 +1054,6 @@ function bindFeedbackTrackerEvents() {
     });
   }
 
-  elements.feedbackTracker.querySelectorAll("[data-player-shift]").forEach((button) => {
-    button.addEventListener("click", () => {
-      shiftSelectedFeedbackPlayer(Number.parseInt(button.dataset.playerShift, 10));
-    });
-  });
-
   elements.feedbackTracker.querySelectorAll("[data-category-id]").forEach((button) => {
     button.addEventListener("click", () => {
       addFeedbackMark(button.dataset.categoryId);
@@ -1089,25 +1080,6 @@ function addFeedbackMark(categoryId) {
 
   const feedback = getPlayerQuarterFeedback(playerId, getSelectedFeedbackQuarter());
   feedback.counts[categoryId] = (feedback.counts[categoryId] || 0) + 1;
-  saveState();
-  renderFeedbackTracker();
-  renderPostGameReport();
-}
-
-function shiftSelectedFeedbackPlayer(direction) {
-  const availablePlayers = state.players.filter((player) => player.name && player.active);
-  if (!availablePlayers.length) {
-    return;
-  }
-
-  const currentIndex = availablePlayers.findIndex((player) => player.id === state.feedback.selectedPlayerId);
-  const nextIndex = currentIndex + direction;
-
-  if (nextIndex < 0 || nextIndex >= availablePlayers.length) {
-    return;
-  }
-
-  state.feedback.selectedPlayerId = availablePlayers[nextIndex].id;
   saveState();
   renderFeedbackTracker();
   renderPostGameReport();

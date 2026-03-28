@@ -947,12 +947,12 @@ th {
 
   #rotation-section .period-toolbar {
     width: 100%;
-    overflow: hidden;
   }
 
   #rotation-section .period-tabs {
-    justify-content: center;
-    padding-inline: 0.25rem;
+    justify-content: flex-start;
+    padding-inline: 0;
+    scroll-padding-inline: 0;
   }
 
   #rotation-section .rotation-card,

@@ -1014,9 +1014,7 @@ th {
   }
 
   #rotation-section .focus-card-header .helper {
-    margin: 0;
-    font-size: 0.78rem;
-    line-height: 1.25;
+    display: none;
   }
 
   #rotation-section .rotation-board-meta {

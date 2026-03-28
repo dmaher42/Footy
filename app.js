@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.29.9";
+const APP_VERSION = "2026.03.29.10";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -331,7 +331,7 @@ function showUpdateState(message, isVisible) {
     return;
   }
 
-  elements.toggleUpdateMenuBtn.textContent = elements.applyUpdateBtn.hidden ? "Updates" : "Update Ready";
+  elements.toggleUpdateMenuBtn.textContent = elements.applyUpdateBtn.hidden ? "Menu" : "Update Ready";
   elements.toggleUpdateMenuBtn.setAttribute("aria-label", elements.toggleUpdateMenuBtn.textContent);
 }
 

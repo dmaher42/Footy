@@ -370,6 +370,11 @@ th {
   font-weight: 700;
 }
 
+.compact-toggle-btn {
+  padding: 0.55rem 0.8rem;
+  font-size: 0.95rem;
+}
+
 .feedback-category-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -993,6 +998,12 @@ th {
   #rotation-section .board-zone-header {
     text-align: center;
     align-items: center;
+  }
+
+  #rotation-section .compact-toggle-btn {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.92rem;
+    align-self: center;
   }
 
   #rotation-section .board-zone-header,

@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.29.4";
+const APP_VERSION = "2026.03.29.5";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -619,7 +619,7 @@ function renderRotation() {
           <h3>${escapeHtml(activePeriod.label)}</h3>
           <p class="helper">Tap a field player, then a bench player, to make a swap.</p>
         </div>
-        <button type="button" id="toggle-rotation-summary-btn">${showRotationSummary ? "Hide Totals" : "Show Totals"}</button>
+        <button class="compact-toggle-btn" type="button" id="toggle-rotation-summary-btn">${showRotationSummary ? "Hide Totals" : "Show Totals"}</button>
       </div>
 
       <div class="rotation-board-meta">

@@ -40,6 +40,12 @@
       </div>
     </section>
 
+    <nav class="game-nav" aria-label="Game day sections">
+      <button class="game-nav-btn active" type="button" data-game-view="rotation">Rotation</button>
+      <button class="game-nav-btn" type="button" data-game-view="feedback">Feedback</button>
+      <button class="game-nav-btn" type="button" data-game-view="report">Report</button>
+    </nav>
+
     <div id="setup-backdrop" class="setup-backdrop" hidden></div>
     <aside id="setup-panel" class="setup-panel" aria-hidden="true">
       <div class="setup-panel-shell">
@@ -117,7 +123,7 @@
     </aside>
 
     <main class="layout">
-      <section class="card primary-panel">
+      <section id="rotation-section" class="card primary-panel game-view-section">
         <div class="section-heading panel-heading">
           <div>
             <h2>Rotation Plan</h2>
@@ -130,7 +136,7 @@
         </div>
       </section>
 
-      <section class="card">
+      <section id="feedback-section" class="card game-view-section" hidden>
         <div class="section-heading panel-heading">
           <div>
             <h2>Player Feedback</h2>
@@ -143,18 +149,15 @@
         </div>
       </section>
 
-      <section class="card">
+      <section id="report-section" class="card game-view-section" hidden>
         <div class="section-heading panel-heading">
           <div>
             <h2>Post-Game Report</h2>
-            <p class="helper">Open this after the game when you want the full report.</p>
+            <p class="helper">Use this after the game when you want the full report.</p>
           </div>
-          <div class="inline-actions compact-actions">
-            <button id="toggle-report-btn" type="button">Show Report</button>
-            <button id="copy-report-btn" type="button">Copy Full Report</button>
-          </div>
+          <button id="copy-report-btn" type="button">Copy Full Report</button>
         </div>
-        <div id="post-game-report" class="post-game-report" hidden>
+        <div id="post-game-report" class="post-game-report">
           <p class="placeholder">Track some player feedback during the game to build a post-game report.</p>
         </div>
       </section>

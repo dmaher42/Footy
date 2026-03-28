@@ -152,6 +152,23 @@ select:focus {
   box-shadow: var(--shadow);
 }
 
+.game-nav {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.game-nav-btn {
+  background: rgba(255, 253, 248, 0.92);
+  border: 1px solid rgba(18, 102, 79, 0.12);
+}
+
+.game-nav-btn.active {
+  background: var(--primary);
+  color: #fff;
+}
+
 .update-copy p {
   margin: 0.35rem 0 0;
   color: var(--muted);
@@ -161,12 +178,6 @@ select:focus {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
-}
-
-.compact-actions {
-  margin-top: 0;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 .primary-panel {
@@ -278,36 +289,15 @@ th {
   gap: 1rem;
 }
 
-.feedback-player-bar {
-  display: flex;
-  flex-wrap: wrap;
+.feedback-player-switcher {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 0.75rem;
+  align-items: end;
 }
 
-.player-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  border-radius: 999px;
-  padding: 0.75rem 1rem;
-  background: rgba(18, 102, 79, 0.08);
-  border: 1px solid rgba(18, 102, 79, 0.12);
-}
-
-.player-chip.active {
-  background: var(--primary);
-  color: #fff;
-}
-
-.player-chip-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.7rem;
-  height: 1.7rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.24);
-  font-size: 0.85rem;
+.player-select-wrap {
+  min-width: 0;
 }
 
 .feedback-grid {
@@ -365,6 +355,11 @@ th {
   margin: 0;
   line-height: 1.6;
   white-space: pre-wrap;
+}
+
+.small-pill {
+  font-size: 0.9rem;
+  padding: 0.35rem 0.65rem;
 }
 
 .post-game-report {
@@ -586,7 +581,8 @@ th {
   }
 
   .update-panel,
-  .update-actions {
+  .update-actions,
+  .game-nav {
     flex-direction: column;
     align-items: stretch;
   }
@@ -626,10 +622,8 @@ th {
     grid-template-columns: 1fr;
   }
 
-  .feedback-player-bar {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 0.25rem;
+  .feedback-player-switcher {
+    grid-template-columns: 1fr;
   }
 
   .table-wrap {

@@ -87,6 +87,10 @@ const elements = {
   updateText: document.querySelector("#update-text"),
   checkUpdateBtn: document.querySelector("#check-update-btn"),
   applyUpdateBtn: document.querySelector("#apply-update-btn"),
+  gameViewButtons: document.querySelectorAll("[data-game-view]"),
+  rotationSection: document.querySelector("#rotation-section"),
+  feedbackSection: document.querySelector("#feedback-section"),
+  reportSection: document.querySelector("#report-section"),
   periodLabel: document.querySelector("#period-label"),
   periodCount: document.querySelector("#period-count"),
   playersOnField: document.querySelector("#players-on-field"),
@@ -102,7 +106,6 @@ const elements = {
   setupPanel: document.querySelector("#setup-panel"),
   copyFeedbackBtn: document.querySelector("#copy-feedback-btn"),
   copyReportBtn: document.querySelector("#copy-report-btn"),
-  toggleReportBtn: document.querySelector("#toggle-report-btn"),
   feedbackTracker: document.querySelector("#feedback-tracker"),
   postGameReport: document.querySelector("#post-game-report"),
   tableBody: document.querySelector("#player-table-body"),
@@ -113,7 +116,7 @@ const elements = {
 
 let currentRotationPlan = null;
 let isSetupOpen = false;
-let isReportOpen = false;
+let activeGameView = "rotation";
 let serviceWorkerRegistration = null;
 let waitingServiceWorker = null;
 let shouldReloadForUpdate = false;
@@ -136,7 +139,13 @@ function bindEvents() {
   elements.applyUpdateBtn.addEventListener("click", applyAppUpdate);
   elements.copyFeedbackBtn.addEventListener("click", copySelectedFeedbackSummary);
   elements.copyReportBtn.addEventListener("click", copyFullPostGameReport);
-  elements.toggleReportBtn.addEventListener("click", toggleReportVisibility);
+
+  elements.gameViewButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      activeGameView = button.dataset.gameView;
+      syncGameView();
+    });
+  });
 
   elements.periodLabel.addEventListener("input", handleSettingsChange);
   elements.periodCount.addEventListener("input", handleSettingsChange);
@@ -318,7 +327,7 @@ function clearAllPlayers() {
 function render() {
   syncSettingsInputs();
   syncSetupPanel();
-  syncReportVisibility();
+  syncGameView();
   syncSelectedFeedbackPlayer();
   renderPlayerTable();
   renderRotation();
@@ -734,15 +743,22 @@ function syncSetupPanel() {
   document.body.classList.toggle("setup-open", isSetupOpen);
 }
 
-function toggleReportVisibility() {
-  isReportOpen = !isReportOpen;
-  syncReportVisibility();
-}
+function syncGameView() {
+  const viewMap = {
+    rotation: elements.rotationSection,
+    feedback: elements.feedbackSection,
+    report: elements.reportSection,
+  };
 
-function syncReportVisibility() {
-  elements.postGameReport.hidden = !isReportOpen;
-  elements.toggleReportBtn.textContent = isReportOpen ? "Hide Report" : "Show Report";
-  elements.copyReportBtn.hidden = !isReportOpen;
+  Object.entries(viewMap).forEach(([viewName, section]) => {
+    section.hidden = viewName !== activeGameView;
+  });
+
+  elements.gameViewButtons.forEach((button) => {
+    const isActive = button.dataset.gameView === activeGameView;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
 }
 
 function syncSelectedFeedbackPlayer() {
@@ -772,18 +788,9 @@ function renderFeedbackTracker() {
   state.feedback.selectedPlayerId = selectedPlayer.id;
 
   const selectedFeedback = getPlayerFeedback(selectedPlayer.id);
-  const playerButtons = availablePlayers
-    .map((player) => {
-      const feedback = getPlayerFeedback(player.id);
-      const totalMarks = getTotalFeedbackMarks(feedback);
-      const activeClass = player.id === selectedPlayer.id ? "player-chip active" : "player-chip";
-      return `
-        <button class="${activeClass}" type="button" data-player-select="${player.id}">
-          <span>${escapeHtml(player.name)}</span>
-          <span class="player-chip-count">${totalMarks}</span>
-        </button>
-      `;
-    })
+  const selectedIndex = availablePlayers.findIndex((player) => player.id === selectedPlayer.id);
+  const playerOptions = availablePlayers
+    .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)}</option>`)
     .join("");
 
   const categoryButtons = FEEDBACK_CATEGORIES
@@ -804,21 +811,27 @@ function renderFeedbackTracker() {
     : '<li class="muted">No notes yet for this player.</li>';
 
   const summaryText = buildFeedbackSummary(selectedPlayer, selectedFeedback);
-  const snapshotRows = availablePlayers
-    .map((player) => {
-      const feedback = getPlayerFeedback(player.id);
-      return `
-        <tr>
-          <td>${escapeHtml(player.name)}</td>
-          <td>${getTotalFeedbackMarks(feedback)}</td>
-          <td>${feedback.notes.length}</td>
-        </tr>
-      `;
-    })
+
+  const quickCounts = FEEDBACK_CATEGORIES
+    .map((category) => `
+      <li class="pill small-pill">
+        ${escapeHtml(category.label)}: ${selectedFeedback.counts[category.id] || 0}
+      </li>
+    `)
     .join("");
 
   elements.feedbackTracker.innerHTML = `
-    <div class="feedback-player-bar">${playerButtons}</div>
+    <div class="feedback-player-switcher">
+      <button type="button" data-player-shift="-1" ${selectedIndex <= 0 ? "disabled" : ""}>Previous</button>
+      <label class="player-select-wrap">
+        Player
+        <select id="feedback-player-select">${playerOptions}</select>
+      </label>
+      <button type="button" data-player-shift="1" ${selectedIndex >= availablePlayers.length - 1 ? "disabled" : ""}>Next</button>
+    </div>
+
+    <ul class="pill-list">${quickCounts}</ul>
+
     <div class="feedback-grid">
       <article class="feedback-panel">
         <h3>${escapeHtml(selectedPlayer.name)}</h3>
@@ -834,42 +847,40 @@ function renderFeedbackTracker() {
         </label>
         <div class="inline-actions">
           <button id="add-feedback-note-btn" type="button">Add Note</button>
-          <button id="clear-player-feedback-btn" type="button">Clear Player Feedback</button>
+          <button id="clear-player-feedback-btn" type="button">Clear</button>
         </div>
         <ul class="feedback-note-list">${notesList}</ul>
       </article>
     </div>
 
     <article class="feedback-panel">
-      <h3>Suggested Feedback For ${escapeHtml(selectedPlayer.name)}</h3>
+      <h3>Summary</h3>
       <p id="feedback-summary-text" class="feedback-summary-text">${escapeHtml(summaryText)}</p>
     </article>
-
-    <article class="summary-card">
-      <h3>Feedback Snapshot</h3>
-      <table class="summary-table">
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th>Marks</th>
-            <th>Notes</th>
-          </tr>
-        </thead>
-        <tbody>${snapshotRows}</tbody>
-      </table>
-    </article>
   `;
+
+  const playerSelect = elements.feedbackTracker.querySelector("#feedback-player-select");
+  if (playerSelect) {
+    playerSelect.value = selectedPlayer.id;
+  }
 
   bindFeedbackTrackerEvents();
 }
 
 function bindFeedbackTrackerEvents() {
-  elements.feedbackTracker.querySelectorAll("[data-player-select]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.feedback.selectedPlayerId = button.dataset.playerSelect;
+  const playerSelect = elements.feedbackTracker.querySelector("#feedback-player-select");
+  if (playerSelect) {
+    playerSelect.addEventListener("change", () => {
+      state.feedback.selectedPlayerId = playerSelect.value;
       saveState();
       renderFeedbackTracker();
       renderPostGameReport();
+    });
+  }
+
+  elements.feedbackTracker.querySelectorAll("[data-player-shift]").forEach((button) => {
+    button.addEventListener("click", () => {
+      shiftSelectedFeedbackPlayer(Number.parseInt(button.dataset.playerShift, 10));
     });
   });
 
@@ -899,6 +910,25 @@ function addFeedbackMark(categoryId) {
 
   const feedback = getPlayerFeedback(playerId);
   feedback.counts[categoryId] = (feedback.counts[categoryId] || 0) + 1;
+  saveState();
+  renderFeedbackTracker();
+  renderPostGameReport();
+}
+
+function shiftSelectedFeedbackPlayer(direction) {
+  const availablePlayers = state.players.filter((player) => player.name && player.active);
+  if (!availablePlayers.length) {
+    return;
+  }
+
+  const currentIndex = availablePlayers.findIndex((player) => player.id === state.feedback.selectedPlayerId);
+  const nextIndex = currentIndex + direction;
+
+  if (nextIndex < 0 || nextIndex >= availablePlayers.length) {
+    return;
+  }
+
+  state.feedback.selectedPlayerId = availablePlayers[nextIndex].id;
   saveState();
   renderFeedbackTracker();
   renderPostGameReport();

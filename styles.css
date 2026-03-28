@@ -317,6 +317,8 @@ th {
 }
 
 .feedback-quarter-tabs {
+  width: 100%;
+  justify-content: flex-start;
   padding-bottom: 0;
 }
 
@@ -548,6 +550,7 @@ th {
 }
 
 .period-tab {
+  flex: 0 0 auto;
   white-space: nowrap;
   background: rgba(18, 102, 79, 0.08);
   border: 1px solid rgba(18, 102, 79, 0.12);
@@ -1007,6 +1010,11 @@ th {
 
   .period-tabs {
     justify-content: flex-start;
+  }
+
+  .feedback-quarter-tabs {
+    padding-inline: 0;
+    scroll-padding-inline: 0;
   }
 
   .feedback-player-switcher {

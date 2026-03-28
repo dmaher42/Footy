@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.29.10";
+const APP_VERSION = "2026.03.29.11";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -88,6 +88,7 @@ const elements = {
   updatePanel: document.querySelector("#update-panel"),
   toggleUpdateMenuBtn: document.querySelector("#toggle-update-menu-btn"),
   updatePanelCard: document.querySelector("#update-panel-card"),
+  updateStatusPanel: document.querySelector("#update-status-panel"),
   updateTitle: document.querySelector("#update-title"),
   updateText: document.querySelector("#update-text"),
   checkUpdateBtn: document.querySelector("#check-update-btn"),
@@ -322,12 +323,14 @@ function applyAppUpdate() {
 }
 
 function showUpdateState(message, isVisible) {
-  elements.updatePanel.hidden = !isVisible;
+  elements.updateStatusPanel.hidden = !isVisible;
   elements.updateText.textContent = message;
   elements.applyUpdateBtn.hidden = !message.includes("Refresh App");
 
   if (!isVisible) {
     setUpdateMenuOpen(false);
+    elements.toggleUpdateMenuBtn.textContent = "Menu";
+    elements.toggleUpdateMenuBtn.setAttribute("aria-label", "Menu");
     return;
   }
 

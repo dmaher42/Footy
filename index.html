@@ -8,12 +8,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Footy Manager">
-  <meta name="app-version" content="2026.03.29.10">
+  <meta name="app-version" content="2026.03.29.11">
   <title>Footy Player Manager</title>
-  <link rel="manifest" href="manifest.json?v=2026.03.29.10">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2026.03.29.10">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2026.03.29.10">
-  <link rel="stylesheet" href="styles.css?v=2026.03.29.10">
+  <link rel="manifest" href="manifest.json?v=2026.03.29.11">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2026.03.29.11">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2026.03.29.11">
+  <link rel="stylesheet" href="styles.css?v=2026.03.29.11">
 </head>
 <body>
   <div class="page">
@@ -25,21 +25,25 @@
           Rotation and feedback in one simple game-day view.
         </p>
       </div>
-      <div class="hero-actions mobile-action-bar">
-        <button id="edit-setup-btn" type="button">Edit Setup</button>
-        <button id="generate-btn" class="primary">Generate Rotation</button>
-      </div>
     </header>
 
-    <section id="update-panel" class="update-panel" hidden>
+    <section id="update-panel" class="update-panel">
       <button id="toggle-update-menu-btn" class="update-menu-btn" type="button" aria-expanded="false">Menu</button>
       <div id="update-panel-card" class="update-panel-card" hidden>
-        <div class="update-copy">
-          <strong id="update-title">App Update</strong>
-          <p id="update-text">Check for the latest version of the app.</p>
+        <div class="menu-panel-actions">
+          <button id="edit-setup-btn" type="button">Edit Setup</button>
+          <button id="generate-btn" class="primary" type="button">Generate Rotation</button>
+          <button id="print-btn" type="button">Print / Save PDF</button>
+          <button id="check-update-btn" class="utility-btn" type="button">Check for Update</button>
         </div>
-        <div class="update-actions">
-          <button id="apply-update-btn" class="primary" type="button" hidden>Refresh App</button>
+        <div id="update-status-panel" class="update-status-panel" hidden>
+          <div class="update-copy">
+            <strong id="update-title">App Update</strong>
+            <p id="update-text">Check for the latest version of the app.</p>
+          </div>
+          <div class="update-actions">
+            <button id="apply-update-btn" class="primary" type="button" hidden>Refresh App</button>
+          </div>
         </div>
       </div>
     </section>
@@ -122,11 +126,7 @@
         </section>
 
         <div class="setup-panel-actions">
-          <div class="setup-panel-utilities">
-            <button id="check-update-btn" class="utility-btn" type="button">Check for Update</button>
-          </div>
           <div class="setup-panel-primary-actions">
-            <button id="print-btn" type="button">Print / Save PDF</button>
             <button id="generate-close-btn" class="primary" type="button">Generate And Close</button>
           </div>
         </div>
@@ -205,6 +205,6 @@
     </tr>
   </template>
 
-  <script src="app.js?v=2026.03.29.10"></script>
+  <script src="app.js?v=2026.03.29.11"></script>
 </body>
 </html>

@@ -176,6 +176,11 @@ select:focus {
   backdrop-filter: blur(10px);
 }
 
+.update-panel-card[hidden],
+.update-status-panel[hidden] {
+  display: none;
+}
+
 .menu-panel-actions {
   display: grid;
   gap: 0.6rem;

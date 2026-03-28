@@ -1,14 +1,15 @@
-const CACHE_NAME = "footy-player-manager-v4";
+const ASSET_VERSION = "2026.03.28.16";
+const CACHE_NAME = `footy-player-manager-v5-${ASSET_VERSION}`;
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./app.js",
-  "./manifest.json",
+  `./styles.css?v=${ASSET_VERSION}`,
+  `./app.js?v=${ASSET_VERSION}`,
+  `./manifest.json?v=${ASSET_VERSION}`,
   "./version.json",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
-  "./icons/apple-touch-icon.png",
+  `./icons/icon-192.png?v=${ASSET_VERSION}`,
+  `./icons/icon-512.png?v=${ASSET_VERSION}`,
+  `./icons/apple-touch-icon.png?v=${ASSET_VERSION}`,
 ];
 const NETWORK_FIRST_SUFFIXES = [
   "/",

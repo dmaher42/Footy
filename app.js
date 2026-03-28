@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.28.15";
+const APP_VERSION = "2026.03.28.16";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -182,7 +182,7 @@ function registerServiceWorker() {
   }
 
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js", {
+    navigator.serviceWorker.register(`./service-worker.js?v=${APP_VERSION}`, {
       updateViaCache: "none",
     }).then((registration) => {
       serviceWorkerRegistration = registration;

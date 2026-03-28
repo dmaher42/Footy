@@ -775,40 +775,84 @@ th {
 @media (max-width: 800px) {
   .hero {
     flex-direction: column;
-    padding: 0.85rem;
+    padding: 0.7rem 0.8rem;
     align-items: stretch;
+  }
+
+  .eyebrow {
+    margin-bottom: 0.1rem;
+  }
+
+  .hero h1 {
+    font-size: 1rem;
+  }
+
+  .hero-copy {
+    margin-top: 0.1rem;
+    font-size: 0.74rem;
+    line-height: 1.2;
   }
 
   .hero-actions {
     width: 100%;
     min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .mobile-action-bar {
-    position: sticky;
-    bottom: 0.75rem;
-    z-index: 10;
-    padding: 0.75rem;
-    background: rgba(12, 64, 51, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 18px;
-    backdrop-filter: blur(10px);
-    flex-direction: column;
+    position: static;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    backdrop-filter: none;
   }
 
   .mobile-action-bar button {
     width: 100%;
+    padding: 0.7rem 0.75rem;
   }
 
   .form-grid {
     grid-template-columns: 1fr;
   }
 
-  .update-panel,
-  .update-actions,
+  .update-panel {
+    padding: 0.65rem 0.8rem;
+    margin-top: 0.7rem;
+    border-radius: 16px;
+  }
+
+  .update-copy strong {
+    font-size: 0.95rem;
+  }
+
+  .update-copy p {
+    margin-top: 0.15rem;
+    font-size: 0.8rem;
+  }
+
+  .update-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .update-actions button {
+    width: auto;
+    min-width: 0;
+    padding: 0.65rem 0.8rem;
+  }
+
   .game-nav {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
     align-items: stretch;
+  }
+
+  .game-nav-btn {
+    padding: 0.7rem 0.5rem;
   }
 
   .section-heading {

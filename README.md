@@ -56,6 +56,12 @@ The app is now prepared to work like a home-screen web app on mobile.
 
 If you want, the next step can be making this available from a simple private web link so your phone can actually install it.
 
+## Updating The App
+
+- Use the in-app `Check for Update` button to look for the latest version.
+- If a new version is found, tap `Refresh App` to load the newest files.
+- This update flow should not remove your saved players or feedback on that device.
+
 ## GitHub Setup
 
 This folder is ready to go into a GitHub repository named `Footy`.

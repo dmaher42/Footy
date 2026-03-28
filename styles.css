@@ -138,6 +138,30 @@ select:focus {
   margin-top: 1.5rem;
 }
 
+.update-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(18, 102, 79, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 253, 248, 0.96);
+  box-shadow: var(--shadow);
+}
+
+.update-copy p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}
+
+.update-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .primary-panel {
   margin-top: 0.25rem;
 }
@@ -549,6 +573,12 @@ th {
 
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .update-panel,
+  .update-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .section-heading {

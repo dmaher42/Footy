@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.28.22";
+const APP_VERSION = "2026.03.29.1";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -563,7 +563,7 @@ function renderRotation() {
 
   if (!rotationPlan.periods.length) {
     const placeholderText = state.players.length
-      ? 'The current setup cannot generate a valid rotation yet. Read the message above and adjust the player settings.'
+      ? 'The current setup cannot generate a valid rotation yet. Adjust the player settings and try again.'
       : 'Add players, then press <strong>Generate Rotation</strong>.';
 
     elements.rotationOutput.innerHTML = `<p class="placeholder">${placeholderText}</p>`;
@@ -1800,6 +1800,10 @@ function getRotationBoardStatus(activePeriod) {
 }
 
 function showMessages(messages) {
+  if (!elements.messages) {
+    return;
+  }
+
   elements.messages.innerHTML = messages
     .map((message) => `<div class="message ${message.type}">${escapeHtml(message.text)}</div>`)
     .join("");

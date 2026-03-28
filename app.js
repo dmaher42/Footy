@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.28.20";
+const APP_VERSION = "2026.03.28.22";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -981,18 +981,12 @@ function renderFeedbackTracker() {
     ? selectedFeedback.notes
         .slice()
         .reverse()
+        .slice(0, 3)
         .map((note) => `<li>${escapeHtml(note)}</li>`)
         .join("")
-    : '<li class="muted">No notes yet for this player.</li>';
+    : '<li class="muted">No notes yet.</li>';
 
-  const summaryText = buildFeedbackSummary(selectedPlayer, selectedFeedback);
-  const quickCounts = FEEDBACK_CATEGORIES
-    .map((category) => `
-      <li class="pill small-pill">
-        ${escapeHtml(category.label)}: ${selectedFeedback.counts[category.id] || 0}
-      </li>
-    `)
-    .join("");
+  const summaryText = buildFeedbackSummary(selectedPlayer, selectedFeedback, selectedQuarterLabel);
 
   elements.feedbackTracker.innerHTML = `
     <div class="feedback-quarter-row">
@@ -1005,27 +999,28 @@ function renderFeedbackTracker() {
         Player
         <select id="feedback-player-select">${playerOptions}</select>
       </label>
+      <div class="feedback-player-status">
+        <span class="live-count-pill">${getTotalFeedbackMarks(selectedFeedback)} marks</span>
+      </div>
     </div>
 
     <article class="feedback-panel">
       <div class="section-heading live-feedback-header">
         <div>
           <h3>${escapeHtml(selectedPlayer.name)}</h3>
-          <p class="helper">Tap a category each time you notice it in ${escapeHtml(selectedQuarterLabel)}.</p>
+          <p class="helper">Tap what you notice in ${escapeHtml(selectedQuarterLabel)}.</p>
         </div>
-        <span class="live-count-pill">${getTotalFeedbackMarks(selectedFeedback)} marks</span>
       </div>
-      <ul class="pill-list">${quickCounts}</ul>
       <div class="feedback-category-grid">${categoryButtons}</div>
     </article>
 
-    <article class="feedback-panel">
+    <article class="feedback-panel feedback-note-panel">
       <h3>Quick Note</h3>
       <label>
-        Match Note
-        <textarea id="feedback-note-input" rows="4" placeholder="Example: Strong chase in quarter 2 and set up a goal."></textarea>
+        Short note
+        <input id="feedback-note-input" type="text" maxlength="160" placeholder="Example: Strong chase and set up a goal.">
       </label>
-      <div class="inline-actions">
+      <div class="inline-actions feedback-note-actions">
         <button id="add-feedback-note-btn" type="button">Add Note</button>
         <button id="clear-player-feedback-btn" type="button">Clear</button>
       </div>
@@ -1033,7 +1028,7 @@ function renderFeedbackTracker() {
     </article>
 
     <article class="feedback-panel">
-      <h3>${escapeHtml(selectedQuarterLabel)} Summary</h3>
+      <h3>What To Say Now</h3>
       <p id="feedback-summary-text" class="feedback-summary-text">${escapeHtml(summaryText)}</p>
     </article>
   `;
@@ -1074,9 +1069,19 @@ function bindFeedbackTrackerEvents() {
 
   const addNoteButton = elements.feedbackTracker.querySelector("#add-feedback-note-btn");
   const clearFeedbackButton = elements.feedbackTracker.querySelector("#clear-player-feedback-btn");
+  const noteInput = elements.feedbackTracker.querySelector("#feedback-note-input");
 
   if (addNoteButton) {
     addNoteButton.addEventListener("click", addFeedbackNote);
+  }
+
+  if (noteInput) {
+    noteInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        addFeedbackNote();
+      }
+    });
   }
 
   if (clearFeedbackButton) {

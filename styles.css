@@ -322,13 +322,18 @@ th {
 
 .feedback-player-switcher {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.5rem;
   align-items: end;
 }
 
 .player-select-wrap {
   min-width: 0;
+}
+
+.feedback-player-status {
+  display: flex;
+  align-items: end;
 }
 
 .feedback-grid {
@@ -390,11 +395,19 @@ th {
   background: rgba(18, 102, 79, 0.16);
 }
 
+.feedback-note-panel label {
+  gap: 0.35rem;
+}
+
+.feedback-note-actions {
+  margin-top: 0.6rem;
+}
+
 .feedback-note-list {
-  margin: 1rem 0 0;
+  margin: 0.85rem 0 0;
   padding-left: 1.2rem;
   display: grid;
-  gap: 0.6rem;
+  gap: 0.4rem;
 }
 
 .feedback-summary-text {
@@ -998,6 +1011,14 @@ th {
 
   .feedback-player-switcher {
     grid-template-columns: 1fr;
+  }
+
+  .feedback-player-status {
+    align-items: stretch;
+  }
+
+  .feedback-player-status .live-count-pill {
+    width: 100%;
   }
 
   .table-wrap {

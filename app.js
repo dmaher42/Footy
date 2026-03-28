@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.28.9";
+const APP_VERSION = "2026.03.28.10";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -107,7 +107,6 @@ const elements = {
   setupBackdrop: document.querySelector("#setup-backdrop"),
   setupPanel: document.querySelector("#setup-panel"),
   copyFeedbackBtn: document.querySelector("#copy-feedback-btn"),
-  toggleLiveModeBtn: document.querySelector("#toggle-live-mode-btn"),
   copyReportBtn: document.querySelector("#copy-report-btn"),
   feedbackTracker: document.querySelector("#feedback-tracker"),
   postGameReport: document.querySelector("#post-game-report"),
@@ -120,8 +119,6 @@ const elements = {
 let currentRotationPlan = null;
 let isSetupOpen = false;
 let activeGameView = "rotation";
-let isLiveFeedbackMode = false;
-let liveFeedbackPage = 0;
 let activeRotationPeriod = 0;
 let selectedFieldPlayerId = "";
 let selectedBenchPlayerId = "";
@@ -149,7 +146,6 @@ function bindEvents() {
   elements.checkUpdateBtn.addEventListener("click", checkForAppUpdate);
   elements.applyUpdateBtn.addEventListener("click", applyAppUpdate);
   elements.copyFeedbackBtn.addEventListener("click", copySelectedFeedbackSummary);
-  elements.toggleLiveModeBtn.addEventListener("click", toggleLiveFeedbackMode);
   elements.copyReportBtn.addEventListener("click", copyFullPostGameReport);
 
   elements.gameViewButtons.forEach((button) => {
@@ -446,7 +442,6 @@ function render() {
   syncSettingsInputs();
   syncSetupPanel();
   syncGameView();
-  syncLiveModeButton();
   syncSelectedFeedbackPlayer();
   renderPlayerTable();
   renderRotation();
@@ -921,16 +916,6 @@ function syncGameView() {
   });
 }
 
-function toggleLiveFeedbackMode() {
-  isLiveFeedbackMode = !isLiveFeedbackMode;
-  syncLiveModeButton();
-  renderFeedbackTracker();
-}
-
-function syncLiveModeButton() {
-  elements.toggleLiveModeBtn.textContent = isLiveFeedbackMode ? "Detailed Mode" : "Live Mode";
-}
-
 function syncSelectedFeedbackPlayer() {
   const availablePlayers = state.players.filter((player) => player.name && player.active);
 
@@ -963,13 +948,9 @@ function renderFeedbackTracker() {
     .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)}</option>`)
     .join("");
 
-  const categoryPool = isLiveFeedbackMode
-    ? FEEDBACK_CATEGORIES.slice(liveFeedbackPage * 3, liveFeedbackPage * 3 + 3)
-    : FEEDBACK_CATEGORIES;
-
-  const categoryButtons = categoryPool
+  const categoryButtons = FEEDBACK_CATEGORIES
     .map((category) => `
-      <button class="feedback-category-btn ${isLiveFeedbackMode ? "live-feedback-btn" : ""}" type="button" data-category-id="${category.id}">
+      <button class="feedback-category-btn" type="button" data-category-id="${category.id}">
         <span>${category.icon} ${escapeHtml(category.title)}</span>
         <strong>${selectedFeedback.counts[category.id] || 0}</strong>
       </button>
@@ -992,37 +973,6 @@ function renderFeedbackTracker() {
       </li>
     `)
     .join("");
-  const liveModeControls = isLiveFeedbackMode
-    ? `
-      <div class="inline-actions live-action-row">
-        <button id="live-note-btn" type="button">Add Note</button>
-        <button id="live-page-btn" type="button">${liveFeedbackPage === 0 ? "Next 3" : "First 3"}</button>
-        <button id="clear-player-feedback-btn" type="button">Clear</button>
-      </div>
-    `
-    : `
-      <article class="feedback-panel">
-        <h3>Quick Note</h3>
-        <label>
-          Match Note
-          <textarea id="feedback-note-input" rows="4" placeholder="Example: Strong chase in quarter 2 and set up a goal."></textarea>
-        </label>
-        <div class="inline-actions">
-          <button id="add-feedback-note-btn" type="button">Add Note</button>
-          <button id="clear-player-feedback-btn" type="button">Clear</button>
-        </div>
-        <ul class="feedback-note-list">${notesList}</ul>
-      </article>
-    `;
-
-  const summaryPanel = isLiveFeedbackMode
-    ? ""
-    : `
-      <article class="feedback-panel">
-        <h3>Summary</h3>
-        <p id="feedback-summary-text" class="feedback-summary-text">${escapeHtml(summaryText)}</p>
-      </article>
-    `;
 
   elements.feedbackTracker.innerHTML = `
     <div class="feedback-player-switcher">
@@ -1034,20 +984,35 @@ function renderFeedbackTracker() {
       <button type="button" data-player-shift="1" ${selectedIndex >= availablePlayers.length - 1 ? "disabled" : ""}>Next</button>
     </div>
 
-    <article class="feedback-panel ${isLiveFeedbackMode ? "live-feedback-panel" : ""}">
+    <article class="feedback-panel">
       <div class="section-heading live-feedback-header">
         <div>
           <h3>${escapeHtml(selectedPlayer.name)}</h3>
-          <p class="helper">${isLiveFeedbackMode ? "Tap one of the three big buttons below." : "Tap a category each time you notice it during the game."}</p>
+          <p class="helper">Tap a category each time you notice it during the game.</p>
         </div>
-        ${isLiveFeedbackMode ? `<span class="live-count-pill">${getTotalFeedbackMarks(selectedFeedback)} marks</span>` : ""}
+        <span class="live-count-pill">${getTotalFeedbackMarks(selectedFeedback)} marks</span>
       </div>
-      ${isLiveFeedbackMode ? `<ul class="pill-list">${quickCounts}</ul>` : ""}
-      <div class="feedback-category-grid ${isLiveFeedbackMode ? "live-feedback-grid" : ""}">${categoryButtons}</div>
-      ${liveModeControls}
+      <ul class="pill-list">${quickCounts}</ul>
+      <div class="feedback-category-grid">${categoryButtons}</div>
     </article>
 
-    ${summaryPanel}
+    <article class="feedback-panel">
+      <h3>Quick Note</h3>
+      <label>
+        Match Note
+        <textarea id="feedback-note-input" rows="4" placeholder="Example: Strong chase in quarter 2 and set up a goal."></textarea>
+      </label>
+      <div class="inline-actions">
+        <button id="add-feedback-note-btn" type="button">Add Note</button>
+        <button id="clear-player-feedback-btn" type="button">Clear</button>
+      </div>
+      <ul class="feedback-note-list">${notesList}</ul>
+    </article>
+
+    <article class="feedback-panel">
+      <h3>Summary</h3>
+      <p id="feedback-summary-text" class="feedback-summary-text">${escapeHtml(summaryText)}</p>
+    </article>
   `;
 
   const playerSelect = elements.feedbackTracker.querySelector("#feedback-player-select");
@@ -1082,20 +1047,10 @@ function bindFeedbackTrackerEvents() {
   });
 
   const addNoteButton = elements.feedbackTracker.querySelector("#add-feedback-note-btn");
-  const liveNoteButton = elements.feedbackTracker.querySelector("#live-note-btn");
-  const livePageButton = elements.feedbackTracker.querySelector("#live-page-btn");
   const clearFeedbackButton = elements.feedbackTracker.querySelector("#clear-player-feedback-btn");
 
   if (addNoteButton) {
     addNoteButton.addEventListener("click", addFeedbackNote);
-  }
-
-  if (liveNoteButton) {
-    liveNoteButton.addEventListener("click", addLiveFeedbackNote);
-  }
-
-  if (livePageButton) {
-    livePageButton.addEventListener("click", toggleLiveFeedbackPage);
   }
 
   if (clearFeedbackButton) {
@@ -1135,11 +1090,6 @@ function shiftSelectedFeedbackPlayer(direction) {
   renderPostGameReport();
 }
 
-function toggleLiveFeedbackPage() {
-  liveFeedbackPage = liveFeedbackPage === 0 ? 1 : 0;
-  renderFeedbackTracker();
-}
-
 function addFeedbackNote() {
   const playerId = state.feedback.selectedPlayerId;
   const noteInput = elements.feedbackTracker.querySelector("#feedback-note-input");
@@ -1156,24 +1106,6 @@ function addFeedbackNote() {
   const feedback = getPlayerFeedback(playerId);
   feedback.notes.push(note);
   noteInput.value = "";
-  saveState();
-  renderFeedbackTracker();
-  renderPostGameReport();
-}
-
-function addLiveFeedbackNote() {
-  const playerId = state.feedback.selectedPlayerId;
-  if (!playerId) {
-    return;
-  }
-
-  const note = window.prompt("Add a quick match note for this player:");
-  if (!note || !note.trim()) {
-    return;
-  }
-
-  const feedback = getPlayerFeedback(playerId);
-  feedback.notes.push(note.trim());
   saveState();
   renderFeedbackTracker();
   renderPostGameReport();

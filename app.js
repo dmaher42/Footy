@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.28.5";
+const APP_VERSION = "2026.03.28.6";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -1692,6 +1692,7 @@ function normalizeNullableNonNegativeNumber(value) {
 }
 
 function saveState() {
+  sortPlayersAlphabetically();
   const payload = JSON.stringify({
     players: state.players,
     settings: state.settings,
@@ -1710,6 +1711,7 @@ function loadState() {
   try {
     const parsedState = JSON.parse(savedState);
     state.players = Array.isArray(parsedState.players) ? parsedState.players : [];
+    sortPlayersAlphabetically();
     state.settings = {
       ...state.settings,
       ...(parsedState.settings || {}),
@@ -1721,6 +1723,27 @@ function loadState() {
   } catch (error) {
     console.error("Could not load saved app data.", error);
   }
+}
+
+function sortPlayersAlphabetically() {
+  state.players.sort((a, b) => {
+    const aName = `${a?.name || ""}`.trim();
+    const bName = `${b?.name || ""}`.trim();
+
+    if (!aName && !bName) {
+      return 0;
+    }
+
+    if (!aName) {
+      return 1;
+    }
+
+    if (!bName) {
+      return -1;
+    }
+
+    return aName.localeCompare(bName, undefined, { sensitivity: "base" });
+  });
 }
 
 function createId() {

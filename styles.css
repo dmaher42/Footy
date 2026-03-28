@@ -780,6 +780,14 @@ th {
 }
 
 @media (max-width: 800px) {
+  .page {
+    padding: 1rem 0.65rem 3rem;
+  }
+
+  .card {
+    padding: 1rem 0.85rem;
+  }
+
   .hero {
     flex-direction: column;
     padding: 0.7rem 0.8rem;
@@ -918,7 +926,7 @@ th {
 
   #rotation-section .rotation-output > * {
     width: 100%;
-    max-width: 34rem;
+    max-width: none;
   }
 
   #rotation-section .period-toolbar {
@@ -935,6 +943,22 @@ th {
   #rotation-section .board-zone,
   #rotation-section .field-line {
     width: 100%;
+  }
+
+  #rotation-section {
+    padding: 0.9rem 0.7rem;
+  }
+
+  #rotation-section .rotation-card {
+    padding: 0.8rem;
+  }
+
+  #rotation-section .board-zone {
+    padding: 0.75rem;
+  }
+
+  #rotation-section .field-line {
+    padding: 0.6rem;
   }
 
   #rotation-section .focus-card-header,
@@ -1016,13 +1040,16 @@ th {
     margin-left: 0.15rem;
   }
 
-  .player-board,
-  .bench-board {
-    grid-template-columns: 1fr;
+  #rotation-section .player-board,
+  #rotation-section .bench-board,
+  #rotation-section .field-line-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
   }
 
-  .field-line-board {
-    grid-template-columns: 1fr;
+  #rotation-section .board-player-btn {
+    min-height: 3.9rem;
+    padding: 0.6rem;
   }
 
 }

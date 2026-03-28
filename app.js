@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.28.2";
+const APP_VERSION = "2026.03.28.3";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -123,6 +123,8 @@ let activeGameView = "rotation";
 let isLiveFeedbackMode = true;
 let liveFeedbackPage = 0;
 let activeRotationPeriod = 0;
+let selectedFieldPlayerId = "";
+let selectedBenchPlayerId = "";
 let showRotationSummary = false;
 let serviceWorkerRegistration = null;
 let waitingServiceWorker = null;
@@ -538,8 +540,20 @@ function renderRotation() {
     elements.rotationOutput.innerHTML = `<p class="placeholder">${placeholderText}</p>`;
     return;
   }
+
   activeRotationPeriod = Math.min(activeRotationPeriod, rotationPlan.periods.length - 1);
   const activePeriod = rotationPlan.periods[activeRotationPeriod];
+  const activeFieldIds = new Set(activePeriod.onField.map((player) => player.id));
+  const activeBenchIds = new Set(activePeriod.bench.map((player) => player.id));
+
+  if (!activeFieldIds.has(selectedFieldPlayerId)) {
+    selectedFieldPlayerId = "";
+  }
+
+  if (!activeBenchIds.has(selectedBenchPlayerId)) {
+    selectedBenchPlayerId = "";
+  }
+
   const periodButtons = rotationPlan.periods
     .map((period, index) => `
       <button class="period-tab ${index === activeRotationPeriod ? "active" : ""}" type="button" data-period-tab="${index}">
@@ -548,18 +562,14 @@ function renderRotation() {
     `)
     .join("");
 
-  const onFieldItems = activePeriod.onField
-    .map((player) => `<li class="rotation-name">${escapeHtml(player.name)}${player.preferredPosition ? ` <span class="muted">(${escapeHtml(player.preferredPosition)})</span>` : ""}</li>`)
+  const onFieldCards = activePeriod.onField
+    .map((player) => renderRotationBoardPlayer(player, "field", activePeriod.index, player.id === selectedFieldPlayerId))
     .join("");
-  const benchItems = activePeriod.bench.length
-    ? activePeriod.bench.map((player) => `<li class="rotation-name">${escapeHtml(player.name)}${player.preferredPosition ? ` <span class="muted">(${escapeHtml(player.preferredPosition)})</span>` : ""}</li>`).join("")
-    : '<li class="muted">No bench this period.</li>';
-  const onFieldOptions = activePeriod.onField
-    .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)}</option>`)
-    .join("");
-  const benchOptions = activePeriod.bench
-    .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)}</option>`)
-    .join("");
+  const benchCards = activePeriod.bench.length
+    ? activePeriod.bench
+      .map((player) => renderRotationBoardPlayer(player, "bench", activePeriod.index, player.id === selectedBenchPlayerId))
+      .join("")
+    : '<p class="board-empty muted">No bench this period.</p>';
   const summaryRows = rotationPlan.summary
     .map((player) => `
       <tr>
@@ -569,28 +579,7 @@ function renderRotation() {
       </tr>
     `)
     .join("");
-  const swapControls = activePeriod.bench.length
-    ? `
-      <div class="swap-controls">
-        <p class="swap-title"><strong>Manual Swap</strong></p>
-        <div class="swap-grid">
-          <label>
-            Field Player
-            <select class="swap-field-select" data-period-index="${activePeriod.index}">
-              ${onFieldOptions}
-            </select>
-          </label>
-          <label>
-            Bench Player
-            <select class="swap-bench-select" data-period-index="${activePeriod.index}">
-              ${benchOptions}
-            </select>
-          </label>
-        </div>
-        <button class="swap-btn" type="button" data-period-index="${activePeriod.index}">Swap Players</button>
-      </div>
-    `
-    : '<p class="muted">No bench players available to swap in this period.</p>';
+  const boardStatus = getRotationBoardStatus(activePeriod);
 
   elements.rotationOutput.innerHTML = `
     <div class="period-toolbar">
@@ -603,23 +592,39 @@ function renderRotation() {
       <div class="section-heading focus-card-header">
         <div>
           <h3>${escapeHtml(activePeriod.label)}</h3>
-          <p class="helper">Focus on one period at a time.</p>
+          <p class="helper">Tap a field player, then a bench player, to make a swap.</p>
         </div>
         <button type="button" id="toggle-rotation-summary-btn">${showRotationSummary ? "Hide Totals" : "Show Totals"}</button>
       </div>
 
-      <div class="rotation-columns">
-        <section class="rotation-column">
-          <h4>On Field</h4>
-          <ol class="rotation-list">${onFieldItems}</ol>
-        </section>
-        <section class="rotation-column">
-          <h4>Bench</h4>
-          <ol class="rotation-list">${benchItems}</ol>
-        </section>
+      <div class="rotation-board-meta">
+        <p class="board-status">${escapeHtml(boardStatus)}</p>
+        <div class="board-counts" aria-label="Current rotation counts">
+          <span class="board-count-pill">On Field: ${activePeriod.onField.length}</span>
+          <span class="board-count-pill bench-count-pill">Bench: ${activePeriod.bench.length}</span>
+        </div>
       </div>
 
-      ${swapControls}
+      <div class="rotation-board">
+        <section class="board-zone field-zone">
+          <div class="board-zone-header">
+            <h4>On Field</h4>
+            <span>${activePeriod.onField.length} players</span>
+          </div>
+          <div class="player-board field-board">
+            ${onFieldCards}
+          </div>
+        </section>
+        <section class="board-zone bench-zone">
+          <div class="board-zone-header">
+            <h4>Bench</h4>
+            <span>${activePeriod.bench.length} players</span>
+          </div>
+          <div class="player-board bench-board">
+            ${benchCards}
+          </div>
+        </section>
+      </div>
     </article>
 
     ${showRotationSummary ? `
@@ -647,6 +652,7 @@ function bindRotationControls() {
   elements.rotationOutput.querySelectorAll("[data-period-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       activeRotationPeriod = Number.parseInt(button.dataset.periodTab, 10);
+      clearRotationSelection();
       renderRotation();
     });
   });
@@ -659,6 +665,7 @@ function bindRotationControls() {
       }
 
       activeRotationPeriod = nextIndex;
+      clearRotationSelection();
       renderRotation();
     });
   });
@@ -1373,30 +1380,44 @@ function copyFullPostGameReport() {
 }
 
 function bindSwapButtons() {
-  const swapButtons = elements.rotationOutput.querySelectorAll(".swap-btn");
+  const swapButtons = elements.rotationOutput.querySelectorAll("[data-board-player-id]");
 
   swapButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const periodIndex = Number.parseInt(button.dataset.periodIndex, 10);
-      swapPlayersForPeriod(periodIndex);
+      const playerId = button.dataset.boardPlayerId;
+      const group = button.dataset.boardGroup;
+
+      if (!playerId || !group) {
+        return;
+      }
+
+      handleRotationBoardSelection(periodIndex, group, playerId);
     });
   });
 }
 
-function swapPlayersForPeriod(periodIndex) {
+function handleRotationBoardSelection(periodIndex, group, playerId) {
+  if (group === "field") {
+    selectedFieldPlayerId = selectedFieldPlayerId === playerId ? "" : playerId;
+  }
+
+  if (group === "bench") {
+    selectedBenchPlayerId = selectedBenchPlayerId === playerId ? "" : playerId;
+  }
+
+  if (selectedFieldPlayerId && selectedBenchPlayerId) {
+    swapPlayersForPeriod(periodIndex, selectedFieldPlayerId, selectedBenchPlayerId);
+    return;
+  }
+
+  renderRotation();
+}
+
+function swapPlayersForPeriod(periodIndex, fieldPlayerId, benchPlayerId) {
   if (!currentRotationPlan || !currentRotationPlan.periods.length) {
     return;
   }
-
-  const fieldSelect = elements.rotationOutput.querySelector(`.swap-field-select[data-period-index="${periodIndex}"]`);
-  const benchSelect = elements.rotationOutput.querySelector(`.swap-bench-select[data-period-index="${periodIndex}"]`);
-
-  if (!fieldSelect || !benchSelect) {
-    return;
-  }
-
-  const fieldPlayerId = fieldSelect.value;
-  const benchPlayerId = benchSelect.value;
 
   if (!fieldPlayerId || !benchPlayerId || fieldPlayerId === benchPlayerId) {
     return;
@@ -1426,7 +1447,13 @@ function swapPlayersForPeriod(periodIndex) {
     currentRotationPlan.settings.periodCount
   );
   currentRotationPlan.manualEdited = true;
+  clearRotationSelection();
   renderRotation();
+}
+
+function clearRotationSelection() {
+  selectedFieldPlayerId = "";
+  selectedBenchPlayerId = "";
 }
 
 function buildPlanSummary(periods, playerPool, periodCount) {
@@ -1491,6 +1518,47 @@ function renderPlayerPill(player, isBench = false) {
   const position = player.preferredPosition ? ` (${escapeHtml(player.preferredPosition)})` : "";
   const classes = isBench ? "pill bench" : "pill";
   return `<li class="${classes}">${escapeHtml(player.name)}${position}</li>`;
+}
+
+function renderRotationBoardPlayer(player, group, periodIndex, isSelected) {
+  const positionText = player.preferredPosition
+    ? escapeHtml(player.preferredPosition)
+    : group === "field" ? "On Field" : "Bench";
+  const classes = [
+    "board-player-btn",
+    group === "field" ? "field-player" : "bench-player",
+    isSelected ? "selected" : "",
+  ].filter(Boolean).join(" ");
+
+  return `
+    <button
+      class="${classes}"
+      type="button"
+      data-period-index="${periodIndex}"
+      data-board-group="${group}"
+      data-board-player-id="${escapeHtml(player.id)}"
+      aria-pressed="${isSelected ? "true" : "false"}"
+    >
+      <span class="board-player-name">${escapeHtml(player.name)}</span>
+      <span class="board-player-role">${positionText}</span>
+    </button>
+  `;
+}
+
+function getRotationBoardStatus(activePeriod) {
+  if (!activePeriod.bench.length) {
+    return "No bench players in this period.";
+  }
+
+  if (selectedFieldPlayerId) {
+    return "Now tap a bench player to swap in.";
+  }
+
+  if (selectedBenchPlayerId) {
+    return "Now tap a field player to swap out.";
+  }
+
+  return "Tap a player card to start a swap.";
 }
 
 function showMessages(messages) {

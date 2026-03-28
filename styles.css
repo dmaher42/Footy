@@ -781,11 +781,11 @@ th {
 
 @media (max-width: 800px) {
   .page {
-    padding: 1rem 0.65rem 3rem;
+    padding: 0.75rem 0.45rem 2.5rem;
   }
 
   .card {
-    padding: 1rem 0.85rem;
+    padding: 0.9rem 0.7rem;
   }
 
   .hero {
@@ -946,25 +946,39 @@ th {
   }
 
   #rotation-section {
-    padding: 0.9rem 0.7rem;
+    padding: 0.75rem 0.45rem;
   }
 
   #rotation-section .rotation-card {
-    padding: 0.8rem;
+    padding: 0.65rem;
   }
 
   #rotation-section .board-zone {
-    padding: 0.75rem;
+    padding: 0.55rem;
+    border-radius: 14px;
   }
 
   #rotation-section .field-line {
-    padding: 0.6rem;
+    padding: 0.45rem;
   }
 
   #rotation-section .focus-card-header,
   #rotation-section .board-zone-header {
     text-align: center;
     align-items: center;
+  }
+
+  #rotation-section .board-zone-header,
+  #rotation-section .field-line-header {
+    margin-bottom: 0.45rem;
+  }
+
+  #rotation-section .board-counts {
+    gap: 0.35rem;
+  }
+
+  #rotation-section .board-count-pill {
+    padding: 0.3rem 0.55rem;
   }
 
   .period-tabs {
@@ -1048,8 +1062,17 @@ th {
   }
 
   #rotation-section .board-player-btn {
-    min-height: 3.9rem;
-    padding: 0.6rem;
+    min-height: 3.45rem;
+    padding: 0.5rem;
+    border-radius: 12px;
+  }
+
+  #rotation-section .board-player-name {
+    font-size: 0.95rem;
+  }
+
+  #rotation-section .board-player-role {
+    font-size: 0.74rem;
   }
 
 }

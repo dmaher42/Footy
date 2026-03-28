@@ -1,4 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
+const APP_VERSION = "2026.03.28.1";
 const FEEDBACK_CATEGORIES = [
   {
     id: "effort",
@@ -120,6 +121,7 @@ let activeGameView = "rotation";
 let serviceWorkerRegistration = null;
 let waitingServiceWorker = null;
 let shouldReloadForUpdate = false;
+let pendingVersion = null;
 
 registerServiceWorker();
 loadState();
@@ -160,12 +162,14 @@ function bindEvents() {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) {
-    showUpdateState("Updates are not available in this browser.", false, false);
+    showUpdateState("Updates are not available in this browser.", true);
     return;
   }
 
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js").then((registration) => {
+    navigator.serviceWorker.register("./service-worker.js", {
+      updateViaCache: "none",
+    }).then((registration) => {
       serviceWorkerRegistration = registration;
       monitorServiceWorker(registration);
 
@@ -213,6 +217,11 @@ function monitorServiceWorker(registration) {
 }
 
 function checkForAppUpdate() {
+  if (!navigator.onLine) {
+    showUpdateState("You appear to be offline, so the app cannot check for a newer version right now.", true);
+    return;
+  }
+
   if (!serviceWorkerRegistration) {
     showUpdateState("Update checking is not ready yet. Try again in a moment.", true);
     return;
@@ -220,14 +229,24 @@ function checkForAppUpdate() {
 
   showUpdateState("Checking for the latest app version...", true);
 
-  serviceWorkerRegistration.update().then(() => {
+  Promise.all([
+    serviceWorkerRegistration.update(),
+    fetchLatestVersionInfo(),
+  ]).then(([, latestVersionInfo]) => {
     if (serviceWorkerRegistration.waiting) {
       waitingServiceWorker = serviceWorkerRegistration.waiting;
       showUpdateState("A new version is ready. Tap Refresh App to load it.", true);
       return;
     }
 
-    showUpdateState("You already have the latest version on this device.", false);
+    if (latestVersionInfo?.version && latestVersionInfo.version !== APP_VERSION) {
+      pendingVersion = latestVersionInfo.version;
+      showUpdateState(`A newer version (${latestVersionInfo.version}) is available. Tap Refresh App to load it.`, true);
+      return;
+    }
+
+    pendingVersion = null;
+    showUpdateState(`You already have the latest version on this device (${APP_VERSION}).`, false);
   }).catch((error) => {
     console.error("Could not check for app updates.", error);
     showUpdateState("Could not check for updates right now.", true);
@@ -235,20 +254,63 @@ function checkForAppUpdate() {
 }
 
 function applyAppUpdate() {
-  if (!waitingServiceWorker) {
+  if (!waitingServiceWorker && !pendingVersion) {
     showUpdateState("No app update is ready yet.", false);
     return;
   }
 
   showUpdateState("Refreshing to the newest version...", true);
-  shouldReloadForUpdate = true;
-  waitingServiceWorker.postMessage({ type: "SKIP_WAITING" });
+
+  clearAppCaches().then(() => {
+    if (waitingServiceWorker) {
+      shouldReloadForUpdate = true;
+      waitingServiceWorker.postMessage({ type: "SKIP_WAITING" });
+      return;
+    }
+
+    window.location.href = buildReloadUrl();
+  }).catch((error) => {
+    console.error("Could not refresh app caches.", error);
+    window.location.href = buildReloadUrl();
+  });
 }
 
 function showUpdateState(message, isVisible) {
   elements.updatePanel.hidden = !isVisible;
   elements.updateText.textContent = message;
   elements.applyUpdateBtn.hidden = !message.includes("Refresh App");
+}
+
+function fetchLatestVersionInfo() {
+  return fetch(`./version.json?ts=${Date.now()}`, {
+    cache: "no-store",
+  }).then((response) => {
+    if (!response.ok) {
+      throw new Error(`Version request failed with status ${response.status}`);
+    }
+
+    return response.json();
+  });
+}
+
+function clearAppCaches() {
+  if (!("caches" in window)) {
+    return Promise.resolve();
+  }
+
+  return caches.keys().then((cacheNames) =>
+    Promise.all(
+      cacheNames
+        .filter((cacheName) => cacheName.startsWith("footy-player-manager"))
+        .map((cacheName) => caches.delete(cacheName))
+    )
+  );
+}
+
+function buildReloadUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.set("refresh", Date.now().toString());
+  return url.toString();
 }
 
 function handleSettingsChange() {

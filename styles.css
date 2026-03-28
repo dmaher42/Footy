@@ -149,6 +149,20 @@ select:focus {
   right: 1rem;
   bottom: 1rem;
   z-index: 50;
+  display: grid;
+  justify-items: end;
+  gap: 0.6rem;
+}
+
+.update-menu-btn {
+  padding: 0.65rem 0.9rem;
+  background: rgba(255, 253, 248, 0.98);
+  border: 1px solid rgba(18, 102, 79, 0.18);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.update-panel-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -883,7 +897,15 @@ th {
     left: 0.75rem;
     right: 0.75rem;
     bottom: 0.75rem;
-    width: auto;
+    justify-items: stretch;
+  }
+
+  .update-menu-btn {
+    width: 100%;
+  }
+
+  .update-panel-card {
+    width: 100%;
     padding: 0.65rem 0.8rem;
     border-radius: 16px;
   }

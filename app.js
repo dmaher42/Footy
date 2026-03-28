@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.29.8";
+const APP_VERSION = "2026.03.29.9";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -86,6 +86,8 @@ const state = {
 
 const elements = {
   updatePanel: document.querySelector("#update-panel"),
+  toggleUpdateMenuBtn: document.querySelector("#toggle-update-menu-btn"),
+  updatePanelCard: document.querySelector("#update-panel-card"),
   updateTitle: document.querySelector("#update-title"),
   updateText: document.querySelector("#update-text"),
   checkUpdateBtn: document.querySelector("#check-update-btn"),
@@ -134,6 +136,7 @@ let waitingServiceWorker = null;
 let shouldReloadForUpdate = false;
 let pendingVersion = null;
 let updateButtonResetTimer = null;
+let isUpdateMenuOpen = false;
 
 registerServiceWorker();
 loadState();
@@ -152,6 +155,7 @@ function bindEvents() {
   elements.setupBackdrop.addEventListener("click", closeSetupPanel);
   elements.checkUpdateBtn.addEventListener("click", checkForAppUpdate);
   elements.applyUpdateBtn.addEventListener("click", applyAppUpdate);
+  elements.toggleUpdateMenuBtn.addEventListener("click", toggleUpdateMenu);
   elements.copyFeedbackBtn.addEventListener("click", copySelectedFeedbackSummary);
   elements.toggleFullReportBtn.addEventListener("click", toggleFullGameReportVisibility);
   elements.copyReportBtn.addEventListener("click", copyFullPostGameReport);
@@ -171,6 +175,22 @@ function bindEvents() {
     if (event.key === "Escape" && isSetupOpen) {
       closeSetupPanel();
     }
+
+    if (event.key === "Escape" && isUpdateMenuOpen) {
+      setUpdateMenuOpen(false);
+    }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!isUpdateMenuOpen) {
+      return;
+    }
+
+    if (elements.updatePanel.contains(event.target)) {
+      return;
+    }
+
+    setUpdateMenuOpen(false);
   });
 }
 
@@ -305,6 +325,24 @@ function showUpdateState(message, isVisible) {
   elements.updatePanel.hidden = !isVisible;
   elements.updateText.textContent = message;
   elements.applyUpdateBtn.hidden = !message.includes("Refresh App");
+
+  if (!isVisible) {
+    setUpdateMenuOpen(false);
+    return;
+  }
+
+  elements.toggleUpdateMenuBtn.textContent = elements.applyUpdateBtn.hidden ? "Updates" : "Update Ready";
+  elements.toggleUpdateMenuBtn.setAttribute("aria-label", elements.toggleUpdateMenuBtn.textContent);
+}
+
+function toggleUpdateMenu() {
+  setUpdateMenuOpen(!isUpdateMenuOpen);
+}
+
+function setUpdateMenuOpen(isOpen) {
+  isUpdateMenuOpen = isOpen;
+  elements.updatePanelCard.hidden = !isOpen;
+  elements.toggleUpdateMenuBtn.setAttribute("aria-expanded", String(isOpen));
 }
 
 function setCheckUpdateButtonState(label, disabled, resetAfterMs = 0) {

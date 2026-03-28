@@ -1,5 +1,6 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.28.1";
+const APP_VERSION = "2026.03.28.2";
+const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
     id: "effort",
@@ -127,6 +128,7 @@ let serviceWorkerRegistration = null;
 let waitingServiceWorker = null;
 let shouldReloadForUpdate = false;
 let pendingVersion = null;
+let updateButtonResetTimer = null;
 
 registerServiceWorker();
 loadState();
@@ -168,7 +170,8 @@ function bindEvents() {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) {
-    showUpdateState("Updates are not available in this browser.", true);
+    showUpdateState("", false);
+    setCheckUpdateButtonState("Updates Unavailable", true);
     return;
   }
 
@@ -183,11 +186,12 @@ function registerServiceWorker() {
         waitingServiceWorker = registration.waiting;
         showUpdateState("A new version is ready. Tap Refresh App to load it.", true);
       } else {
-        showUpdateState("Tap Check for Update inside Edit Setup when you want to look for the latest version.", false);
+        showUpdateState("", false);
       }
     }).catch((error) => {
       console.error("Could not register service worker.", error);
-      showUpdateState("Could not set up app updates on this device.", true);
+      showUpdateState("", false);
+      setCheckUpdateButtonState("Try Again", false, 2200);
     });
 
     navigator.serviceWorker.addEventListener("controllerchange", () => {
@@ -207,15 +211,17 @@ function monitorServiceWorker(registration) {
       return;
     }
 
-    showUpdateState("Downloading the latest app version...", true);
+    setCheckUpdateButtonState("Checking...", true);
 
     newWorker.addEventListener("statechange", () => {
       if (newWorker.state === "installed") {
         if (navigator.serviceWorker.controller) {
           waitingServiceWorker = registration.waiting || newWorker;
           showUpdateState("A new version is ready. Tap Refresh App to load it.", true);
+          setCheckUpdateButtonState("Update Ready", false);
         } else {
-          showUpdateState("App is ready on this device.", false);
+          showUpdateState("", false);
+          setCheckUpdateButtonState(CHECK_UPDATE_BUTTON_LABEL, false);
         }
       }
     });
@@ -224,16 +230,18 @@ function monitorServiceWorker(registration) {
 
 function checkForAppUpdate() {
   if (!navigator.onLine) {
-    showUpdateState("You appear to be offline, so the app cannot check for a newer version right now.", true);
+    showUpdateState("", false);
+    setCheckUpdateButtonState("Offline", false, 2200);
     return;
   }
 
   if (!serviceWorkerRegistration) {
-    showUpdateState("Update checking is not ready yet. Try again in a moment.", true);
+    showUpdateState("", false);
+    setCheckUpdateButtonState("Try Again", false, 2200);
     return;
   }
 
-  showUpdateState("Checking for the latest app version...", true);
+  setCheckUpdateButtonState("Checking...", true);
 
   Promise.all([
     serviceWorkerRegistration.update(),
@@ -242,30 +250,36 @@ function checkForAppUpdate() {
     if (serviceWorkerRegistration.waiting) {
       waitingServiceWorker = serviceWorkerRegistration.waiting;
       showUpdateState("A new version is ready. Tap Refresh App to load it.", true);
+      setCheckUpdateButtonState("Update Ready", false);
       return;
     }
 
     if (latestVersionInfo?.version && latestVersionInfo.version !== APP_VERSION) {
       pendingVersion = latestVersionInfo.version;
       showUpdateState(`A newer version (${latestVersionInfo.version}) is available. Tap Refresh App to load it.`, true);
+      setCheckUpdateButtonState("Update Ready", false);
       return;
     }
 
     pendingVersion = null;
-    showUpdateState(`You already have the latest version on this device (${APP_VERSION}).`, false);
+    showUpdateState("", false);
+    setCheckUpdateButtonState("Up to Date", false, 2200);
   }).catch((error) => {
     console.error("Could not check for app updates.", error);
-    showUpdateState("Could not check for updates right now.", true);
+    showUpdateState("", false);
+    setCheckUpdateButtonState("Try Again", false, 2200);
   });
 }
 
 function applyAppUpdate() {
   if (!waitingServiceWorker && !pendingVersion) {
-    showUpdateState("No app update is ready yet.", false);
+    showUpdateState("", false);
+    setCheckUpdateButtonState(CHECK_UPDATE_BUTTON_LABEL, false);
     return;
   }
 
   showUpdateState("Refreshing to the newest version...", true);
+  setCheckUpdateButtonState("Refreshing...", true);
 
   clearAppCaches().then(() => {
     if (waitingServiceWorker) {
@@ -285,6 +299,24 @@ function showUpdateState(message, isVisible) {
   elements.updatePanel.hidden = !isVisible;
   elements.updateText.textContent = message;
   elements.applyUpdateBtn.hidden = !message.includes("Refresh App");
+}
+
+function setCheckUpdateButtonState(label, disabled, resetAfterMs = 0) {
+  elements.checkUpdateBtn.textContent = label;
+  elements.checkUpdateBtn.disabled = disabled;
+
+  if (updateButtonResetTimer) {
+    window.clearTimeout(updateButtonResetTimer);
+    updateButtonResetTimer = null;
+  }
+
+  if (resetAfterMs > 0) {
+    updateButtonResetTimer = window.setTimeout(() => {
+      elements.checkUpdateBtn.textContent = CHECK_UPDATE_BUTTON_LABEL;
+      elements.checkUpdateBtn.disabled = false;
+      updateButtonResetTimer = null;
+    }, resetAfterMs);
+  }
 }
 
 function fetchLatestVersionInfo() {

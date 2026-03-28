@@ -643,6 +643,43 @@ th {
   gap: 0.6rem;
 }
 
+.field-lines {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.field-line {
+  border: 1px solid rgba(18, 102, 79, 0.12);
+  border-radius: 14px;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.field-line-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+
+.field-line-header h5 {
+  margin: 0;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.field-line-header span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.field-line-board {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+
 .bench-board {
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }

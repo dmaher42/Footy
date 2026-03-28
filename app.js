@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.28.3";
+const APP_VERSION = "2026.03.28.4";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -562,9 +562,7 @@ function renderRotation() {
     `)
     .join("");
 
-  const onFieldCards = activePeriod.onField
-    .map((player) => renderRotationBoardPlayer(player, "field", activePeriod.index, player.id === selectedFieldPlayerId))
-    .join("");
+  const fieldBoardMarkup = renderFieldBoard(activePeriod);
   const benchCards = activePeriod.bench.length
     ? activePeriod.bench
       .map((player) => renderRotationBoardPlayer(player, "bench", activePeriod.index, player.id === selectedBenchPlayerId))
@@ -611,9 +609,7 @@ function renderRotation() {
             <h4>On Field</h4>
             <span>${activePeriod.onField.length} players</span>
           </div>
-          <div class="player-board field-board">
-            ${onFieldCards}
-          </div>
+          ${fieldBoardMarkup}
         </section>
         <section class="board-zone bench-zone">
           <div class="board-zone-header">
@@ -1543,6 +1539,102 @@ function renderRotationBoardPlayer(player, group, periodIndex, isSelected) {
       <span class="board-player-role">${positionText}</span>
     </button>
   `;
+}
+
+function renderFieldBoard(activePeriod) {
+  const groupedLines = buildFieldLines(activePeriod.onField);
+
+  if (!groupedLines.some((line) => line.players.length) || groupedLines.every((line) => line.name === "Utility")) {
+    return `
+      <div class="player-board field-board">
+        ${activePeriod.onField
+          .map((player) => renderRotationBoardPlayer(player, "field", activePeriod.index, player.id === selectedFieldPlayerId))
+          .join("")}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="field-lines">
+      ${groupedLines
+        .filter((line) => line.players.length)
+        .map((line) => `
+          <section class="field-line">
+            <div class="field-line-header">
+              <h5>${escapeHtml(line.name)}</h5>
+              <span>${line.players.length}</span>
+            </div>
+            <div class="player-board field-board field-line-board">
+              ${line.players
+                .map((player) => renderRotationBoardPlayer(player, "field", activePeriod.index, player.id === selectedFieldPlayerId))
+                .join("")}
+            </div>
+          </section>
+        `)
+        .join("")}
+    </div>
+  `;
+}
+
+function buildFieldLines(players) {
+  const lines = [
+    { name: "Back", players: [] },
+    { name: "Mid", players: [] },
+    { name: "Forward", players: [] },
+    { name: "Utility", players: [] },
+  ];
+
+  players.forEach((player) => {
+    const line = getFieldLineForPosition(player.preferredPosition);
+    const targetLine = lines.find((entry) => entry.name === line);
+    targetLine.players.push(player);
+  });
+
+  return lines;
+}
+
+function getFieldLineForPosition(position) {
+  const value = `${position || ""}`.trim().toLowerCase();
+
+  if (!value) {
+    return "Utility";
+  }
+
+  if (
+    value.includes("back")
+    || value.includes("def")
+    || value.includes("fb")
+    || value.includes("hb")
+    || value.includes("bp")
+    || value.includes("chb")
+  ) {
+    return "Back";
+  }
+
+  if (
+    value.includes("mid")
+    || value.includes("wing")
+    || value.includes("centre")
+    || value.includes("center")
+    || value.includes("ruck")
+    || value === "c"
+    || value === "r"
+  ) {
+    return "Mid";
+  }
+
+  if (
+    value.includes("forward")
+    || value.includes("fwd")
+    || value.includes("hf")
+    || value.includes("ff")
+    || value.includes("fp")
+    || value.includes("chf")
+  ) {
+    return "Forward";
+  }
+
+  return "Utility";
 }
 
 function getRotationBoardStatus(activePeriod) {

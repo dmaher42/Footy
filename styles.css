@@ -317,6 +317,25 @@ th {
   margin-top: 0;
 }
 
+.live-feedback-panel {
+  gap: 1rem;
+}
+
+.live-feedback-header {
+  align-items: center;
+}
+
+.live-count-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  background: rgba(18, 102, 79, 0.12);
+  border: 1px solid rgba(18, 102, 79, 0.18);
+  font-weight: 700;
+}
+
 .feedback-category-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -342,6 +361,24 @@ th {
   height: 2rem;
   border-radius: 999px;
   background: rgba(18, 102, 79, 0.16);
+}
+
+.live-feedback-grid {
+  grid-template-columns: 1fr;
+}
+
+.live-feedback-btn {
+  min-height: 112px;
+  padding: 1rem 1.1rem;
+  font-size: 1.05rem;
+}
+
+.live-action-row {
+  justify-content: stretch;
+}
+
+.live-action-row button {
+  flex: 1 1 0;
 }
 
 .feedback-note-list {

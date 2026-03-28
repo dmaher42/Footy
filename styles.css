@@ -94,10 +94,10 @@ select:focus {
 .hero {
   display: flex;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: 0.75rem;
   align-items: center;
-  padding: 1.25rem 1.5rem;
-  border-radius: 20px;
+  padding: 0.7rem 0.95rem;
+  border-radius: 16px;
   background:
     linear-gradient(135deg, rgba(18, 102, 79, 0.95), rgba(12, 64, 51, 0.92)),
     linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent);
@@ -106,31 +106,35 @@ select:focus {
 }
 
 .eyebrow {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.15rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   opacity: 0.82;
 }
 
 .hero h1 {
   margin: 0;
-  font-size: clamp(1.7rem, 4vw, 2.5rem);
+  font-size: clamp(1.15rem, 2.7vw, 1.7rem);
 }
 
 .hero-copy {
-  max-width: 38rem;
-  margin: 0.45rem 0 0;
-  font-size: 0.98rem;
-  line-height: 1.45;
+  max-width: 25rem;
+  margin: 0.1rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.25;
 }
 
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.45rem;
   justify-content: flex-end;
-  min-width: 260px;
+  min-width: 200px;
+}
+
+.hero-actions button {
+  padding: 0.65rem 0.9rem;
 }
 
 .layout {
@@ -651,7 +655,7 @@ th {
 @media (max-width: 800px) {
   .hero {
     flex-direction: column;
-    padding: 1.25rem;
+    padding: 0.85rem;
     align-items: stretch;
   }
 

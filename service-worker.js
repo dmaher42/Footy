@@ -1,4 +1,4 @@
-const CACHE_NAME = "footy-player-manager-v3";
+const CACHE_NAME = "footy-player-manager-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -55,8 +55,10 @@ self.addEventListener("fetch", (event) => {
     NETWORK_FIRST_SUFFIXES.some((suffix) => requestUrl.pathname.endsWith(suffix));
 
   if (useNetworkFirst) {
+    const freshRequest = new Request(event.request, { cache: "no-store" });
+
     event.respondWith(
-      fetch(event.request).then((networkResponse) => {
+      fetch(freshRequest).then((networkResponse) => {
         const responseClone = networkResponse.clone();
 
         caches.open(CACHE_NAME).then((cache) => {

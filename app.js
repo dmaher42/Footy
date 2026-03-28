@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.28.7";
+const APP_VERSION = "2026.03.28.8";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -290,10 +290,10 @@ function applyAppUpdate() {
       return;
     }
 
-    window.location.href = buildReloadUrl();
+    forceRefreshToLatestVersion();
   }).catch((error) => {
     console.error("Could not refresh app caches.", error);
-    window.location.href = buildReloadUrl();
+    forceRefreshToLatestVersion();
   });
 }
 
@@ -345,6 +345,22 @@ function clearAppCaches() {
         .map((cacheName) => caches.delete(cacheName))
     )
   );
+}
+
+function forceRefreshToLatestVersion() {
+  const unregisterPromise = "serviceWorker" in navigator
+    ? navigator.serviceWorker.getRegistrations().then((registrations) =>
+      Promise.all(registrations.map((registration) => registration.unregister()))
+    )
+    : Promise.resolve();
+
+  unregisterPromise
+    .catch((error) => {
+      console.error("Could not unregister service workers during refresh.", error);
+    })
+    .finally(() => {
+      window.location.replace(buildReloadUrl());
+    });
 }
 
 function buildReloadUrl() {

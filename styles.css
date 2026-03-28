@@ -128,22 +128,6 @@ select:focus {
   min-width: 180px;
 }
 
-.status-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.status-pill {
-  padding: 0.8rem 1rem;
-  border-radius: 999px;
-  background: rgba(255, 253, 248, 0.92);
-  border: 1px solid rgba(216, 208, 195, 0.9);
-  color: var(--muted);
-  box-shadow: var(--shadow);
-}
-
 .layout {
   display: grid;
   gap: 1.25rem;
@@ -450,9 +434,6 @@ th {
     grid-template-columns: 1fr;
   }
 
-  .status-strip {
-    flex-direction: column;
-  }
 }
 
 @media print {

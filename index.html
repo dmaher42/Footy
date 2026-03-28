@@ -25,70 +25,95 @@
         </p>
       </div>
       <div class="hero-actions mobile-action-bar">
+        <button id="edit-setup-btn" type="button">Edit Setup</button>
         <button id="generate-btn" class="primary">Generate Rotation</button>
         <button id="print-btn" type="button">Print / Save PDF</button>
       </div>
     </header>
 
-    <main class="layout">
-      <section class="card">
-        <h2>Match Settings</h2>
-        <div class="form-grid">
-          <label>
-            Period Label
-            <input id="period-label" type="text" value="Quarter" maxlength="20">
-          </label>
-          <label>
-            Number of Periods
-            <input id="period-count" type="number" min="1" max="12" value="4">
-          </label>
-          <label>
-            Players On Field
-            <input id="players-on-field" type="number" min="1" max="30" value="18">
-          </label>
-        </div>
-        <p class="helper">
-          Example: If you have 22 players and 18 on the field, the app will rotate 4 players to the bench each period. You can lock players on field, bench some players first, and limit how many times a player can be benched.
-        </p>
-      </section>
-
-      <section class="card">
-        <div class="section-heading">
+    <div id="setup-backdrop" class="setup-backdrop" hidden></div>
+    <aside id="setup-panel" class="setup-panel" aria-hidden="true">
+      <div class="setup-panel-shell">
+        <div class="setup-panel-header">
           <div>
-            <h2>Squad List</h2>
-            <p class="helper">Paste one player per line for the fastest setup.</p>
+            <p class="eyebrow setup-eyebrow">Edit Setup</p>
+            <h2>Squad And Match Settings</h2>
+            <p class="helper">Use this panel before the game, then close it so the rotation stays front and centre.</p>
           </div>
-          <button id="clear-all-btn" type="button" class="danger-text">Clear All Players</button>
+          <button id="close-setup-btn" type="button">Close</button>
         </div>
 
-        <label class="full-width">
-          Quick Add Players
-          <textarea id="bulk-player-input" rows="6" placeholder="Jack Smith&#10;Noah Brown&#10;Liam Jones"></textarea>
-        </label>
-        <div class="inline-actions">
-          <button id="add-players-btn" type="button">Add Players</button>
-        </div>
+        <section class="card">
+          <h2>Match Settings</h2>
+          <div class="form-grid">
+            <label>
+              Period Label
+              <input id="period-label" type="text" value="Quarter" maxlength="20">
+            </label>
+            <label>
+              Number of Periods
+              <input id="period-count" type="number" min="1" max="12" value="4">
+            </label>
+            <label>
+              Players On Field
+              <input id="players-on-field" type="number" min="1" max="30" value="18">
+            </label>
+          </div>
+          <p class="helper">
+            Example: If you have 22 players and 18 on the field, the app will rotate 4 players to the bench each period. You can lock players on field, bench some players first, and limit how many times a player can be benched.
+          </p>
+        </section>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Preferred Position</th>
-                <th>Available</th>
-                <th>Can Bench</th>
-                <th>Bench First</th>
-                <th>Max Bench</th>
-                <th>Remove</th>
-              </tr>
-            </thead>
-            <tbody id="player-table-body"></tbody>
-          </table>
-        </div>
-      </section>
+        <section class="card">
+          <div class="section-heading">
+            <div>
+              <h2>Squad List</h2>
+              <p class="helper">Paste one player per line for the fastest setup.</p>
+            </div>
+            <button id="clear-all-btn" type="button" class="danger-text">Clear All Players</button>
+          </div>
 
-      <section class="card">
-        <h2>Rotation Plan</h2>
+          <label class="full-width">
+            Quick Add Players
+            <textarea id="bulk-player-input" rows="6" placeholder="Jack Smith&#10;Noah Brown&#10;Liam Jones"></textarea>
+          </label>
+          <div class="inline-actions">
+            <button id="add-players-btn" type="button">Add Players</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Preferred Position</th>
+                  <th>Available</th>
+                  <th>Can Bench</th>
+                  <th>Bench First</th>
+                  <th>Max Bench</th>
+                  <th>Remove</th>
+                </tr>
+              </thead>
+              <tbody id="player-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="setup-panel-actions">
+          <button id="generate-close-btn" class="primary" type="button">Generate And Close</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="layout">
+      <section class="card primary-panel">
+        <div class="section-heading panel-heading">
+          <div>
+            <h2>Rotation Plan</h2>
+            <p class="helper">Keep this screen open during the game. Use <strong>Edit Setup</strong> only when you need to change the squad or match settings.</p>
+          </div>
+          <button id="edit-setup-inline-btn" type="button">Edit Setup</button>
+        </div>
         <div id="messages" class="messages" aria-live="polite"></div>
         <div id="rotation-output" class="rotation-output">
           <p class="placeholder">Add players, then press <strong>Generate Rotation</strong>.</p>

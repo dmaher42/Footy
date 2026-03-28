@@ -16,8 +16,14 @@ const elements = {
   bulkInput: document.querySelector("#bulk-player-input"),
   addPlayersBtn: document.querySelector("#add-players-btn"),
   clearAllBtn: document.querySelector("#clear-all-btn"),
+  editSetupBtn: document.querySelector("#edit-setup-btn"),
+  editSetupInlineBtn: document.querySelector("#edit-setup-inline-btn"),
+  closeSetupBtn: document.querySelector("#close-setup-btn"),
+  generateCloseBtn: document.querySelector("#generate-close-btn"),
   generateBtn: document.querySelector("#generate-btn"),
   printBtn: document.querySelector("#print-btn"),
+  setupBackdrop: document.querySelector("#setup-backdrop"),
+  setupPanel: document.querySelector("#setup-panel"),
   tableBody: document.querySelector("#player-table-body"),
   messages: document.querySelector("#messages"),
   rotationOutput: document.querySelector("#rotation-output"),
@@ -25,6 +31,7 @@ const elements = {
 };
 
 let currentRotationPlan = null;
+let isSetupOpen = false;
 
 registerServiceWorker();
 loadState();
@@ -34,12 +41,23 @@ render();
 function bindEvents() {
   elements.addPlayersBtn.addEventListener("click", addPlayersFromBulkInput);
   elements.clearAllBtn.addEventListener("click", clearAllPlayers);
-  elements.generateBtn.addEventListener("click", refreshPlanAndRender);
+  elements.editSetupBtn.addEventListener("click", openSetupPanel);
+  elements.editSetupInlineBtn.addEventListener("click", openSetupPanel);
+  elements.closeSetupBtn.addEventListener("click", closeSetupPanel);
+  elements.generateCloseBtn.addEventListener("click", refreshPlanAndCloseSetup);
+  elements.generateBtn.addEventListener("click", refreshPlanAndCloseSetup);
   elements.printBtn.addEventListener("click", () => window.print());
+  elements.setupBackdrop.addEventListener("click", closeSetupPanel);
 
   elements.periodLabel.addEventListener("input", handleSettingsChange);
   elements.periodCount.addEventListener("input", handleSettingsChange);
   elements.playersOnField.addEventListener("input", handleSettingsChange);
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && isSetupOpen) {
+      closeSetupPanel();
+    }
+  });
 }
 
 function registerServiceWorker() {
@@ -125,6 +143,7 @@ function clearAllPlayers() {
 
 function render() {
   syncSettingsInputs();
+  syncSetupPanel();
   renderPlayerTable();
   renderRotation();
 }
@@ -507,6 +526,28 @@ function buildRotationPlan() {
 function refreshPlanAndRender() {
   currentRotationPlan = buildRotationPlan();
   renderRotation();
+}
+
+function refreshPlanAndCloseSetup() {
+  refreshPlanAndRender();
+  closeSetupPanel();
+}
+
+function openSetupPanel() {
+  isSetupOpen = true;
+  syncSetupPanel();
+}
+
+function closeSetupPanel() {
+  isSetupOpen = false;
+  syncSetupPanel();
+}
+
+function syncSetupPanel() {
+  elements.setupPanel.classList.toggle("open", isSetupOpen);
+  elements.setupPanel.setAttribute("aria-hidden", String(!isSetupOpen));
+  elements.setupBackdrop.hidden = !isSetupOpen;
+  document.body.classList.toggle("setup-open", isSetupOpen);
 }
 
 function bindSwapButtons() {

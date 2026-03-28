@@ -20,6 +20,7 @@ body {
   margin: 0;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: var(--text);
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(217, 123, 41, 0.16), transparent 28%),
     linear-gradient(180deg, #f7f4ee 0%, #efe8dc 100%);
@@ -194,6 +195,7 @@ select:focus {
   border-radius: 20px;
   padding: 1.25rem;
   box-shadow: var(--shadow);
+  min-width: 0;
 }
 
 .card h2 {
@@ -506,6 +508,7 @@ th {
 .rotation-output {
   display: grid;
   gap: 1rem;
+  min-width: 0;
 }
 
 .placeholder {
@@ -528,6 +531,7 @@ th {
   gap: 0.5rem;
   overflow-x: auto;
   padding-bottom: 0.2rem;
+  max-width: 100%;
 }
 
 .period-tab {
@@ -600,6 +604,7 @@ th {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
   gap: 1rem;
+  min-width: 0;
 }
 
 .board-zone {
@@ -607,6 +612,7 @@ th {
   border-radius: 16px;
   padding: 0.9rem;
   background: var(--surface);
+  min-width: 0;
 }
 
 .field-zone {
@@ -642,6 +648,7 @@ th {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 0.6rem;
+  min-width: 0;
 }
 
 .field-lines {
@@ -906,7 +913,7 @@ th {
   }
 
   .period-tabs {
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .feedback-player-switcher {

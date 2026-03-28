@@ -97,7 +97,9 @@ const elements = {
   setupBackdrop: document.querySelector("#setup-backdrop"),
   setupPanel: document.querySelector("#setup-panel"),
   copyFeedbackBtn: document.querySelector("#copy-feedback-btn"),
+  copyReportBtn: document.querySelector("#copy-report-btn"),
   feedbackTracker: document.querySelector("#feedback-tracker"),
+  postGameReport: document.querySelector("#post-game-report"),
   tableBody: document.querySelector("#player-table-body"),
   messages: document.querySelector("#messages"),
   rotationOutput: document.querySelector("#rotation-output"),
@@ -123,6 +125,7 @@ function bindEvents() {
   elements.printBtn.addEventListener("click", () => window.print());
   elements.setupBackdrop.addEventListener("click", closeSetupPanel);
   elements.copyFeedbackBtn.addEventListener("click", copySelectedFeedbackSummary);
+  elements.copyReportBtn.addEventListener("click", copyFullPostGameReport);
 
   elements.periodLabel.addEventListener("input", handleSettingsChange);
   elements.periodCount.addEventListener("input", handleSettingsChange);
@@ -227,6 +230,7 @@ function render() {
   renderPlayerTable();
   renderRotation();
   renderFeedbackTracker();
+  renderPostGameReport();
 }
 
 function syncSettingsInputs() {
@@ -612,6 +616,7 @@ function refreshPlanAndRender() {
   currentRotationPlan = buildRotationPlan();
   renderRotation();
   renderFeedbackTracker();
+  renderPostGameReport();
 }
 
 function refreshPlanAndCloseSetup() {
@@ -655,6 +660,7 @@ function renderFeedbackTracker() {
 
   if (!availablePlayers.length) {
     elements.feedbackTracker.innerHTML = '<p class="placeholder">Add players to start tracking feedback.</p>';
+    renderPostGameReport();
     return;
   }
 
@@ -759,6 +765,7 @@ function bindFeedbackTrackerEvents() {
       state.feedback.selectedPlayerId = button.dataset.playerSelect;
       saveState();
       renderFeedbackTracker();
+      renderPostGameReport();
     });
   });
 
@@ -790,6 +797,7 @@ function addFeedbackMark(categoryId) {
   feedback.counts[categoryId] = (feedback.counts[categoryId] || 0) + 1;
   saveState();
   renderFeedbackTracker();
+  renderPostGameReport();
 }
 
 function addFeedbackNote() {
@@ -810,6 +818,7 @@ function addFeedbackNote() {
   noteInput.value = "";
   saveState();
   renderFeedbackTracker();
+  renderPostGameReport();
 }
 
 function clearSelectedPlayerFeedback() {
@@ -827,6 +836,7 @@ function clearSelectedPlayerFeedback() {
   state.feedback.byPlayerId[playerId] = createEmptyFeedbackRecord();
   saveState();
   renderFeedbackTracker();
+  renderPostGameReport();
 }
 
 function copySelectedFeedbackSummary() {
@@ -912,6 +922,100 @@ function buildFeedbackSummary(player, feedback) {
   }
 
   return `${player.name}: ${summaryParts.join(" ")}`;
+}
+
+function renderPostGameReport() {
+  const reportEntries = buildPostGameReportEntries();
+
+  if (!reportEntries.length) {
+    elements.postGameReport.innerHTML = '<p class="placeholder">Track some player feedback during the game to build a post-game report.</p>';
+    return;
+  }
+
+  const reportCards = reportEntries
+    .map((entry) => `
+      <article class="feedback-panel report-card">
+        <div class="section-heading report-card-header">
+          <div>
+            <h3>${escapeHtml(entry.playerName)}</h3>
+            <p class="helper">Marks: ${entry.totalMarks} | Notes: ${entry.noteCount}</p>
+          </div>
+          <button type="button" data-copy-player-report="${entry.playerId}">Copy</button>
+        </div>
+        <p class="feedback-summary-text">${escapeHtml(entry.summary)}</p>
+      </article>
+    `)
+    .join("");
+
+  elements.postGameReport.innerHTML = `<div class="report-grid">${reportCards}</div>`;
+
+  elements.postGameReport.querySelectorAll("[data-copy-player-report]").forEach((button) => {
+    button.addEventListener("click", () => {
+      copyPlayerReport(button.dataset.copyPlayerReport);
+    });
+  });
+}
+
+function buildPostGameReportEntries() {
+  return state.players
+    .filter((player) => player.name)
+    .map((player) => {
+      const feedback = getPlayerFeedback(player.id);
+      const totalMarks = getTotalFeedbackMarks(feedback);
+      const summary = buildFeedbackSummary(player, feedback);
+
+      return {
+        playerId: player.id,
+        playerName: player.name,
+        totalMarks,
+        noteCount: feedback.notes.length,
+        summary,
+      };
+    })
+    .filter((entry) => entry.totalMarks > 0 || !entry.summary.startsWith("No feedback recorded yet"))
+    .sort((a, b) => {
+      if (b.totalMarks !== a.totalMarks) {
+        return b.totalMarks - a.totalMarks;
+      }
+
+      if (b.noteCount !== a.noteCount) {
+        return b.noteCount - a.noteCount;
+      }
+
+      return a.playerName.localeCompare(b.playerName);
+    });
+}
+
+function buildFullPostGameReportText() {
+  const entries = buildPostGameReportEntries();
+  return entries.map((entry) => entry.summary).join("\n\n");
+}
+
+function copyPlayerReport(playerId) {
+  const player = state.players.find((entry) => entry.id === playerId);
+  if (!player || !navigator.clipboard) {
+    return;
+  }
+
+  const summary = buildFeedbackSummary(player, getPlayerFeedback(playerId));
+  navigator.clipboard.writeText(summary).catch((error) => {
+    console.error("Could not copy player report.", error);
+  });
+}
+
+function copyFullPostGameReport() {
+  if (!navigator.clipboard) {
+    return;
+  }
+
+  const reportText = buildFullPostGameReportText();
+  if (!reportText) {
+    return;
+  }
+
+  navigator.clipboard.writeText(reportText).catch((error) => {
+    console.error("Could not copy post-game report.", error);
+  });
 }
 
 function bindSwapButtons() {

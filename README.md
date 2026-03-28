@@ -27,6 +27,8 @@ The app is now prepared to work like a home-screen web app on mobile.
 - Tap a player, then tap quick categories like effort, defence, leadership, or 1%ers.
 - Add short notes when something specific happens.
 - Use `Copy Feedback` to copy the selected player's summary after the game.
+- Use the `Post-Game Report` section to generate comments for all players at once.
+- Use `Copy Full Report` if you want to paste the whole team report somewhere else.
 
 ## Notes
 

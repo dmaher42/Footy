@@ -1000,9 +1000,36 @@ th {
     align-items: center;
   }
 
+  #rotation-section .focus-card {
+    gap: 0.65rem;
+  }
+
+  #rotation-section .focus-card-header {
+    gap: 0.45rem;
+  }
+
+  #rotation-section .focus-card-header h3 {
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+  }
+
+  #rotation-section .focus-card-header .helper {
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.25;
+  }
+
+  #rotation-section .rotation-board-meta {
+    gap: 0.45rem;
+  }
+
+  #rotation-section .board-status {
+    font-size: 0.82rem;
+  }
+
   #rotation-section .compact-toggle-btn {
-    padding: 0.45rem 0.7rem;
-    font-size: 0.92rem;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.85rem;
     align-self: center;
   }
 
@@ -1024,7 +1051,8 @@ th {
   }
 
   #rotation-section .board-count-pill {
-    padding: 0.3rem 0.55rem;
+    padding: 0.22rem 0.5rem;
+    font-size: 0.82rem;
   }
 
   .period-tabs {

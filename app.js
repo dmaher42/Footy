@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.03.29.14";
+const APP_VERSION = "2026.04.11.1";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -82,6 +82,11 @@ const state = {
     currentQuarter: 1,
     byPlayerId: {},
   },
+  notepad: {
+    currentQuarter: 1,
+    byQuarter: {},
+    reflection: "",
+  },
 };
 
 const elements = {
@@ -96,6 +101,7 @@ const elements = {
   gameViewButtons: document.querySelectorAll("[data-game-view]"),
   rotationSection: document.querySelector("#rotation-section"),
   feedbackSection: document.querySelector("#feedback-section"),
+  notepadSection: document.querySelector("#notepad-section"),
   reportSection: document.querySelector("#report-section"),
   periodLabel: document.querySelector("#period-label"),
   periodCount: document.querySelector("#period-count"),
@@ -115,6 +121,7 @@ const elements = {
   toggleFullReportBtn: document.querySelector("#toggle-full-report-btn"),
   copyReportBtn: document.querySelector("#copy-report-btn"),
   feedbackTracker: document.querySelector("#feedback-tracker"),
+  notepadContent: document.querySelector("#notepad-content"),
   postGameReport: document.querySelector("#post-game-report"),
   tableBody: document.querySelector("#player-table-body"),
   messages: document.querySelector("#messages"),
@@ -507,6 +514,7 @@ function render() {
   renderPlayerTable();
   renderRotation();
   renderFeedbackTracker();
+  renderNotepad();
   renderPostGameReport();
 }
 
@@ -970,6 +978,7 @@ function syncGameView() {
   const viewMap = {
     rotation: elements.rotationSection,
     feedback: elements.feedbackSection,
+    notepad: elements.notepadSection,
     report: elements.reportSection,
   };
 
@@ -1089,6 +1098,159 @@ function renderFeedbackTracker() {
   }
 
   bindFeedbackTrackerEvents();
+}
+
+function getSelectedNotepadQuarter() {
+  const maxQuarter = normalizePositiveNumber(state.settings.periodCount, 4);
+  const quarter = normalizePositiveNumber(state.notepad.currentQuarter, 1);
+  const clampedQuarter = Math.min(Math.max(quarter, 1), maxQuarter);
+  state.notepad.currentQuarter = clampedQuarter;
+  return clampedQuarter;
+}
+
+function getNotepadQuarterEntry(quarterNumber) {
+  const quarterKey = String(quarterNumber);
+
+  if (!state.notepad.byQuarter[quarterKey]) {
+    state.notepad.byQuarter[quarterKey] = {
+      notes: "",
+      message: "",
+    };
+  }
+
+  return state.notepad.byQuarter[quarterKey];
+}
+
+function renderNotepad() {
+  const selectedQuarter = getSelectedNotepadQuarter();
+  const quarterLabel = getFeedbackQuarterLabel(selectedQuarter);
+  const quarterTabs = buildQuarterTabs(selectedQuarter, "data-notepad-quarter");
+  const quarterEntry = getNotepadQuarterEntry(selectedQuarter);
+  const reflectionText = typeof state.notepad.reflection === "string" ? state.notepad.reflection : "";
+
+  elements.notepadContent.innerHTML = `
+    <div class="feedback-quarter-row">
+      <p class="helper quarter-label">Writing for ${escapeHtml(quarterLabel)}</p>
+      <div class="period-tabs feedback-quarter-tabs">${quarterTabs}</div>
+    </div>
+
+    <div class="notepad-grid">
+      <article class="feedback-panel notepad-panel">
+        <h3>${escapeHtml(quarterLabel)} Notes</h3>
+        <label>
+          Notes
+          <textarea id="notepad-quarter-notes" rows="7" placeholder="What happened this quarter?">${escapeHtml(quarterEntry.notes || "")}</textarea>
+        </label>
+      </article>
+
+      <article class="feedback-panel notepad-panel">
+        <div class="section-heading report-card-header">
+          <div>
+            <h3>${escapeHtml(quarterLabel)} Message</h3>
+            <p class="helper">What you want to say at the break.</p>
+          </div>
+          <button id="copy-quarter-message-btn" type="button">Copy Message</button>
+        </div>
+        <label>
+          Message
+          <textarea id="notepad-quarter-message" rows="6" placeholder="Your quarter message...">${escapeHtml(quarterEntry.message || "")}</textarea>
+        </label>
+      </article>
+    </div>
+
+    <article class="feedback-panel notepad-panel">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>After Game Reflection</h3>
+          <p class="helper">Big picture notes after the game.</p>
+        </div>
+        <button id="copy-reflection-btn" type="button">Copy Reflection</button>
+      </div>
+      <label>
+        Reflection
+        <textarea id="notepad-reflection" rows="8" placeholder="What worked, what needs work, and what to carry into next week...">${escapeHtml(reflectionText)}</textarea>
+      </label>
+    </article>
+  `;
+
+  bindNotepadEvents();
+}
+
+function bindNotepadEvents() {
+  elements.notepadContent.querySelectorAll("[data-notepad-quarter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.notepad.currentQuarter = Number.parseInt(button.dataset.notepadQuarter, 10);
+      saveState();
+      renderNotepad();
+    });
+  });
+
+  const quarterNotesInput = elements.notepadContent.querySelector("#notepad-quarter-notes");
+  if (quarterNotesInput) {
+    quarterNotesInput.addEventListener("input", () => {
+      const entry = getNotepadQuarterEntry(getSelectedNotepadQuarter());
+      entry.notes = quarterNotesInput.value;
+      saveState();
+    });
+  }
+
+  const quarterMessageInput = elements.notepadContent.querySelector("#notepad-quarter-message");
+  if (quarterMessageInput) {
+    quarterMessageInput.addEventListener("input", () => {
+      const entry = getNotepadQuarterEntry(getSelectedNotepadQuarter());
+      entry.message = quarterMessageInput.value;
+      saveState();
+    });
+  }
+
+  const reflectionInput = elements.notepadContent.querySelector("#notepad-reflection");
+  if (reflectionInput) {
+    reflectionInput.addEventListener("input", () => {
+      state.notepad.reflection = reflectionInput.value;
+      saveState();
+    });
+  }
+
+  const copyQuarterMessageBtn = elements.notepadContent.querySelector("#copy-quarter-message-btn");
+  if (copyQuarterMessageBtn) {
+    copyQuarterMessageBtn.addEventListener("click", copyQuarterMessage);
+  }
+
+  const copyReflectionBtn = elements.notepadContent.querySelector("#copy-reflection-btn");
+  if (copyReflectionBtn) {
+    copyReflectionBtn.addEventListener("click", copyReflectionNote);
+  }
+}
+
+function copyQuarterMessage() {
+  if (!navigator.clipboard) {
+    return;
+  }
+
+  const entry = getNotepadQuarterEntry(getSelectedNotepadQuarter());
+  const messageText = (entry.message || "").trim();
+  if (!messageText) {
+    return;
+  }
+
+  navigator.clipboard.writeText(messageText).catch((error) => {
+    console.error("Could not copy quarter message.", error);
+  });
+}
+
+function copyReflectionNote() {
+  if (!navigator.clipboard) {
+    return;
+  }
+
+  const reflectionText = `${state.notepad.reflection || ""}`.trim();
+  if (!reflectionText) {
+    return;
+  }
+
+  navigator.clipboard.writeText(reflectionText).catch((error) => {
+    console.error("Could not copy reflection.", error);
+  });
 }
 
 function bindFeedbackTrackerEvents() {
@@ -1365,7 +1527,10 @@ function getFeedbackQuarterLabel(quarterNumber) {
 }
 
 function buildFeedbackQuarterTabs(attributeName) {
-  const selectedQuarter = getSelectedFeedbackQuarter();
+  return buildQuarterTabs(getSelectedFeedbackQuarter(), attributeName);
+}
+
+function buildQuarterTabs(selectedQuarter, attributeName) {
   const periodCount = normalizePositiveNumber(state.settings.periodCount, 4);
 
   return Array.from({ length: periodCount }, (_, index) => {
@@ -1896,6 +2061,7 @@ function saveState() {
     players: state.players,
     settings: state.settings,
     feedback: state.feedback,
+    notepad: state.notepad,
   });
   window.localStorage.setItem(STORAGE_KEY, payload);
 }
@@ -1919,6 +2085,11 @@ function loadState() {
       selectedPlayerId: parsedState.feedback?.selectedPlayerId || null,
       currentQuarter: parsedState.feedback?.currentQuarter || 1,
       byPlayerId: parsedState.feedback?.byPlayerId || {},
+    };
+    state.notepad = {
+      currentQuarter: parsedState.notepad?.currentQuarter || 1,
+      byQuarter: parsedState.notepad?.byQuarter || {},
+      reflection: parsedState.notepad?.reflection || "",
     };
   } catch (error) {
     console.error("Could not load saved app data.", error);

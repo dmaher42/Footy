@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.11.7";
+const APP_VERSION = "2026.04.11.8";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -1511,6 +1511,7 @@ function buildQuarterTabs(selectedQuarter, attributeName) {
 
 function renderPostGameReport() {
   const selectedQuarter = getSelectedFeedbackQuarter();
+  const quarterNotes = getNotepadQuarterEntry(selectedQuarter).notes || "";
   const quarterEntries = buildQuarterReportEntries(selectedQuarter);
   const reportEntries = buildPostGameReportEntries();
 
@@ -1523,6 +1524,20 @@ function renderPostGameReport() {
   }
 
   const quarterTabs = buildFeedbackQuarterTabs("data-report-quarter");
+  const quarterNotesCard = `
+    <article class="feedback-panel report-notes-panel">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>${escapeHtml(getFeedbackQuarterLabel(selectedQuarter))} Notes</h3>
+        </div>
+        <button id="copy-quarter-notes-btn" type="button">Copy Notes</button>
+      </div>
+      <label class="report-notes-field">
+        Notes
+        <textarea id="report-quarter-notes" rows="6" readonly>${escapeHtml(quarterNotes)}</textarea>
+      </label>
+    </article>
+  `;
   const quarterSummaryCards = quarterEntries.length
     ? renderReportCards(quarterEntries, false)
     : '<p class="placeholder">No feedback recorded yet for this quarter.</p>';
@@ -1531,6 +1546,8 @@ function renderPostGameReport() {
     : '<p class="placeholder">Track some player feedback during the game to build a post-game report.</p>';
 
   elements.postGameReport.innerHTML = `
+    ${quarterNotesCard}
+
     <article class="feedback-panel">
       <div class="section-heading report-card-header">
         <div>
@@ -1567,6 +1584,11 @@ function renderPostGameReport() {
       copyPlayerReport(button.dataset.copyPlayerReport);
     });
   });
+
+  const copyQuarterNotesBtn = elements.postGameReport.querySelector("#copy-quarter-notes-btn");
+  if (copyQuarterNotesBtn) {
+    copyQuarterNotesBtn.addEventListener("click", copyCurrentQuarterNotes);
+  }
 }
 
 function buildQuarterReportEntries(quarterNumber) {
@@ -1608,7 +1630,6 @@ function renderReportCards(entries, includeCopyButtons) {
         <div class="section-heading report-card-header">
           <div>
             <h3>${escapeHtml(entry.playerName)}</h3>
-            <p class="helper">Marks: ${entry.totalMarks} | Notes: ${entry.noteCount}</p>
           </div>
           ${includeCopyButtons ? `<button type="button" data-copy-player-report="${entry.playerId}">Copy</button>` : ""}
         </div>
@@ -1651,6 +1672,21 @@ function buildPostGameReportEntries() {
 function buildFullPostGameReportText() {
   const entries = buildPostGameReportEntries();
   return entries.map((entry) => entry.summary).join("\n\n");
+}
+
+function copyCurrentQuarterNotes() {
+  if (!navigator.clipboard) {
+    return;
+  }
+
+  const notesText = (getNotepadQuarterEntry(getSelectedFeedbackQuarter()).notes || "").trim();
+  if (!notesText) {
+    return;
+  }
+
+  navigator.clipboard.writeText(notesText).catch((error) => {
+    console.error("Could not copy quarter notes.", error);
+  });
 }
 
 function copyPlayerReport(playerId) {

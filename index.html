@@ -8,12 +8,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Footy Manager">
-  <meta name="app-version" content="2026.04.11.3">
+  <meta name="app-version" content="2026.04.11.4">
   <title>Footy Player Manager</title>
-  <link rel="manifest" href="manifest.json?v=2026.04.11.3">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2026.04.11.3">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2026.04.11.3">
-  <link rel="stylesheet" href="styles.css?v=2026.04.11.3">
+  <link rel="manifest" href="manifest.json?v=2026.04.11.4">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2026.04.11.4">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2026.04.11.4">
+  <link rel="stylesheet" href="styles.css?v=2026.04.11.4">
 </head>
 <body>
   <div class="page">
@@ -53,15 +53,13 @@
       <div class="setup-panel-shell">
         <div class="setup-panel-header">
           <div>
-            <p class="eyebrow setup-eyebrow">Edit Setup</p>
-            <h2>Squad And Match Settings</h2>
-            <p class="helper">Use this panel before the game, then close it so the rotation stays front and centre.</p>
+            <h2>Setup</h2>
           </div>
           <button id="close-setup-btn" type="button">Close</button>
         </div>
 
         <section class="card">
-          <h2>Match Settings</h2>
+          <h2>Game Settings</h2>
           <div class="form-grid">
             <label>
               Period Label
@@ -76,16 +74,12 @@
               <input id="players-on-field" type="number" min="1" max="30" value="18">
             </label>
           </div>
-          <p class="helper">
-            Example: If you have 22 players and 18 on the field, the app will rotate 4 players to the bench each period. You can lock players on field, bench some players first, and limit how many times a player can be benched.
-          </p>
         </section>
 
         <section class="card">
           <div class="section-heading">
             <div>
-              <h2>Squad List</h2>
-              <p class="helper">Paste one player per line for the fastest setup.</p>
+              <h2>Players</h2>
             </div>
             <div class="inline-actions compact-actions setup-heading-actions">
               <button id="toggle-bench-rules-btn" type="button">Show Bench Rules</button>
@@ -207,6 +201,6 @@
     </tr>
   </template>
 
-  <script src="app.js?v=2026.04.11.3"></script>
+  <script src="app.js?v=2026.04.11.4"></script>
 </body>
 </html>

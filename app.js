@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.11.9";
+const APP_VERSION = "2026.04.11.10";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -1058,11 +1058,6 @@ function renderFeedbackTracker() {
     </div>
 
       <article class="feedback-panel">
-        <div class="section-heading live-feedback-header">
-          <div>
-            <h3>${escapeHtml(selectedPlayer.name)}</h3>
-          </div>
-        </div>
         <div class="feedback-category-grid">${categoryButtons}</div>
       </article>
 

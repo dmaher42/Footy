@@ -399,10 +399,6 @@ th {
   margin-top: 0;
 }
 
-.live-feedback-header {
-  align-items: center;
-}
-
 .live-count-pill {
   display: inline-flex;
   align-items: center;

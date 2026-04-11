@@ -5,67 +5,67 @@ const FEEDBACK_CATEGORIES = [
   {
     id: "effort",
     label: "Effort",
-    title: "Effort and Work Rate",
+    title: "Effort",
     icon: "💪",
     prompts: [
-      "Ran all day and set the tone with repeat efforts.",
-      "Kept turning up at contests and made the opposition work.",
-      "Chased hard and never stopped competing."
-    ]
-  },
-  {
-    id: "teamplay",
-    label: "Team Play",
-    title: "Support and Team Play",
-    icon: "🤝",
-    prompts: [
-      "Played team-first footy and made teammates better.",
-      "Blocked and shepherded so others could break free.",
-      "Worked hard to bring teammates into the game."
-    ]
-  },
-  {
-    id: "leadership",
-    label: "Leadership",
-    title: "Leadership and Voice",
-    icon: "🗣",
-    prompts: [
-      "Used their voice all game and organised others well.",
-      "Stayed calm under pressure and lifted the group.",
-      "Led by example when we needed someone to step up."
+      "Ran hard all day and kept competing.",
+      "Worked hard in repeat efforts and kept turning up.",
+      "Set the tone with effort and work rate."
     ]
   },
   {
     id: "defence",
     label: "Defence",
-    title: "Defensive Effort",
+    title: "Defence",
     icon: "🛡",
     prompts: [
-      "Shut down their opponent and played disciplined footy.",
-      "Read the play well and helped us rebound smartly.",
-      "Took strong defensive moments that stopped the opposition."
+      "Defended strongly and made their opponent work.",
+      "Read the play well and helped stop the opposition.",
+      "Won important defensive moments for the team."
     ]
   },
   {
-    id: "offence",
-    label: "Offence",
-    title: "Offensive Impact",
+    id: "attack",
+    label: "Attack",
+    title: "Attack",
     icon: "⚡",
     prompts: [
-      "Drove us forward and created attacking opportunities.",
-      "Ran hard to provide an option and opened up the field.",
-      "Used the ball well in attacking moments."
+      "Created attacking opportunities and drove the team forward.",
+      "Worked hard to be an option and helped us attack.",
+      "Had real impact in our attacking play."
     ]
   },
   {
     id: "teamacts",
+    label: "Team Acts",
+    title: "Team Acts",
+    icon: "🤝",
+    prompts: [
+      "Played for the team and made others better.",
+      "Did strong team-first things that helped us play well.",
+      "Supported teammates and contributed to the group."
+    ]
+  },
+  {
+    id: "voice",
+    label: "Voice",
+    title: "Voice",
+    icon: "🗣",
+    prompts: [
+      "Used their voice well and helped organise the team.",
+      "Communicated strongly and lifted those around them.",
+      "Brought good voice and leadership to the game."
+    ]
+  },
+  {
+    id: "teamacts_old",
     label: "1%ers",
-    title: "1%ers / Team First Acts",
+    title: "1%ers",
     icon: "🧠",
     prompts: [
-      "Did the little team-first things that win games.",
-      "Showed courage and discipline in key moments.",
-      "Put the team first with repeat one-percent efforts."
+      "Did the little things that really matter in games.",
+      "Produced strong one-percent efforts for the team.",
+      "Showed discipline and team-first habits in key moments."
     ]
   }
 ];
@@ -1388,6 +1388,26 @@ function getPlayerFeedback(playerId) {
   return aggregate;
 }
 
+function migrateLegacyCategoryCounts(counts) {
+  if (!counts || typeof counts !== "object") {
+    return;
+  }
+
+  const hasLegacyOnePercenters = Object.prototype.hasOwnProperty.call(counts, "teamacts")
+    && !Object.prototype.hasOwnProperty.call(counts, "teamacts_old");
+  const legacyOnePercentersCount = hasLegacyOnePercenters ? (counts.teamacts || 0) : 0;
+
+  counts.attack = (counts.attack || 0) + (counts.offence || 0);
+  counts.voice = (counts.voice || 0) + (counts.leadership || 0);
+  counts.teamacts = (hasLegacyOnePercenters ? 0 : (counts.teamacts || 0)) + (counts.teamplay || 0);
+  counts.teamacts_old = (counts.teamacts_old || 0) + legacyOnePercentersCount + (counts.teamacts_legacy || 0);
+
+  delete counts.offence;
+  delete counts.leadership;
+  delete counts.teamplay;
+  delete counts.teamacts_legacy;
+}
+
 function normalizeFeedbackRecord(feedbackRecord) {
   const normalizedRecord = feedbackRecord && typeof feedbackRecord === "object"
     ? feedbackRecord
@@ -1397,6 +1417,7 @@ function normalizeFeedbackRecord(feedbackRecord) {
     const migratedQuarter = createEmptyQuarterFeedbackRecord();
 
     if (normalizedRecord.counts && typeof normalizedRecord.counts === "object") {
+      migrateLegacyCategoryCounts(normalizedRecord.counts);
       FEEDBACK_CATEGORIES.forEach((category) => {
         migratedQuarter.counts[category.id] = normalizedRecord.counts[category.id] || 0;
       });
@@ -1410,6 +1431,12 @@ function normalizeFeedbackRecord(feedbackRecord) {
       "1": migratedQuarter,
     };
   }
+
+  Object.values(normalizedRecord.byQuarter).forEach((quarterFeedback) => {
+    if (quarterFeedback && typeof quarterFeedback === "object") {
+      migrateLegacyCategoryCounts(quarterFeedback.counts);
+    }
+  });
 
   return normalizedRecord;
 }

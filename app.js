@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.11.1";
+const APP_VERSION = "2026.04.11.2";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -180,6 +180,7 @@ function bindEvents() {
   elements.gameViewButtons.forEach((button) => {
     button.addEventListener("click", () => {
       activeGameView = button.dataset.gameView;
+      setUpdateMenuOpen(false);
       syncGameView();
     });
   });

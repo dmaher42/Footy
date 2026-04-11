@@ -8,12 +8,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Footy Manager">
-  <meta name="app-version" content="2026.04.11.1">
+  <meta name="app-version" content="2026.04.11.2">
   <title>Footy Player Manager</title>
-  <link rel="manifest" href="manifest.json?v=2026.04.11.1">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2026.04.11.1">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2026.04.11.1">
-  <link rel="stylesheet" href="styles.css?v=2026.04.11.1">
+  <link rel="manifest" href="manifest.json?v=2026.04.11.2">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2026.04.11.2">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2026.04.11.2">
+  <link rel="stylesheet" href="styles.css?v=2026.04.11.2">
 </head>
 <body>
   <div class="page">
@@ -30,6 +30,12 @@
     <section id="update-panel" class="update-panel">
       <button id="toggle-update-menu-btn" class="update-menu-btn" type="button" aria-expanded="false">Menu</button>
       <div id="update-panel-card" class="update-panel-card" hidden>
+        <div class="menu-view-actions">
+          <button class="game-nav-btn active" type="button" data-game-view="rotation">Rotation</button>
+          <button class="game-nav-btn" type="button" data-game-view="feedback">Feedback</button>
+          <button class="game-nav-btn" type="button" data-game-view="notepad">Notepad</button>
+          <button class="game-nav-btn" type="button" data-game-view="report">Report</button>
+        </div>
         <div class="menu-panel-actions">
           <button id="edit-setup-btn" type="button">Edit Setup</button>
           <button id="generate-btn" class="primary" type="button">Generate Rotation</button>
@@ -47,13 +53,6 @@
         </div>
       </div>
     </section>
-
-    <nav class="game-nav" aria-label="Game day sections">
-      <button class="game-nav-btn active" type="button" data-game-view="rotation">Rotation</button>
-      <button class="game-nav-btn" type="button" data-game-view="feedback">Feedback</button>
-      <button class="game-nav-btn" type="button" data-game-view="notepad">Notepad</button>
-      <button class="game-nav-btn" type="button" data-game-view="report">Report</button>
-    </nav>
 
     <div id="setup-backdrop" class="setup-backdrop" hidden></div>
     <aside id="setup-panel" class="setup-panel" aria-hidden="true">
@@ -218,6 +217,6 @@
     </tr>
   </template>
 
-  <script src="app.js?v=2026.04.11.1"></script>
+  <script src="app.js?v=2026.04.11.2"></script>
 </body>
 </html>

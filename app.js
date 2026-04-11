@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.11.5";
+const APP_VERSION = "2026.04.11.7";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -500,6 +500,7 @@ function clearAllPlayers() {
     currentQuarter: 1,
     byPlayerId: {},
   };
+  state.notepad.currentQuarter = 1;
   currentRotationPlan = null;
   saveState();
   render();
@@ -1019,6 +1020,7 @@ function renderFeedbackTracker() {
 
   const selectedQuarter = getSelectedFeedbackQuarter();
   const selectedQuarterLabel = getFeedbackQuarterLabel(selectedQuarter);
+  const quarterEntry = getNotepadQuarterEntry(selectedQuarter);
   const selectedPlayer = availablePlayers.find((player) => player.id === state.feedback.selectedPlayerId) || availablePlayers[0];
   state.feedback.selectedPlayerId = selectedPlayer.id;
 
@@ -1036,15 +1038,6 @@ function renderFeedbackTracker() {
       </button>
     `)
     .join("");
-
-  const notesList = selectedFeedback.notes.length
-    ? selectedFeedback.notes
-        .slice()
-        .reverse()
-        .slice(0, 3)
-        .map((note) => `<li>${escapeHtml(note)}</li>`)
-        .join("")
-    : '<li class="muted">No notes yet.</li>';
 
   const summaryText = buildFeedbackSummary(selectedPlayer, selectedFeedback, selectedQuarterLabel);
 
@@ -1064,31 +1057,26 @@ function renderFeedbackTracker() {
       </div>
     </div>
 
-    <article class="feedback-panel">
-      <div class="section-heading live-feedback-header">
-        <div>
-          <h3>${escapeHtml(selectedPlayer.name)}</h3>
+      <article class="feedback-panel">
+        <div class="section-heading live-feedback-header">
+          <div>
+            <h3>${escapeHtml(selectedPlayer.name)}</h3>
+          </div>
         </div>
-      </div>
-      <div class="feedback-category-grid">${categoryButtons}</div>
-    </article>
+        <div class="feedback-category-grid">${categoryButtons}</div>
+      </article>
 
-    <article class="feedback-panel feedback-note-panel">
-      <h3>Quick Note</h3>
-      <label>
-        Short note
-        <input id="feedback-note-input" type="text" maxlength="160" placeholder="Example: Strong chase and set up a goal.">
-      </label>
-      <div class="inline-actions feedback-note-actions">
-        <button id="add-feedback-note-btn" type="button">Add Note</button>
-        <button id="clear-player-feedback-btn" type="button">Clear</button>
-      </div>
-      <ul class="feedback-note-list">${notesList}</ul>
-    </article>
+      <article class="feedback-panel game-notes-panel">
+        <h3>Game Notes</h3>
+        <label>
+          Notes for ${escapeHtml(selectedQuarterLabel)}
+          <textarea id="feedback-quarter-notes" rows="5" placeholder="What you notice this quarter...">${escapeHtml(quarterEntry.notes || "")}</textarea>
+        </label>
+      </article>
 
-    <article class="feedback-panel">
-      <h3>What To Say Now</h3>
-      <p id="feedback-summary-text" class="feedback-summary-text">${escapeHtml(summaryText)}</p>
+      <article class="feedback-panel">
+        <h3>What To Say Now</h3>
+        <p id="feedback-summary-text" class="feedback-summary-text">${escapeHtml(summaryText)}</p>
     </article>
   `;
 
@@ -1125,7 +1113,6 @@ function renderNotepad() {
   const selectedQuarter = getSelectedNotepadQuarter();
   const quarterLabel = getFeedbackQuarterLabel(selectedQuarter);
   const quarterTabs = buildQuarterTabs(selectedQuarter, "data-notepad-quarter");
-  const quarterEntry = getNotepadQuarterEntry(selectedQuarter);
   const reflectionText = typeof state.notepad.reflection === "string" ? state.notepad.reflection : "";
 
   elements.notepadContent.innerHTML = `
@@ -1134,28 +1121,18 @@ function renderNotepad() {
       <div class="period-tabs feedback-quarter-tabs">${quarterTabs}</div>
     </div>
 
-    <div class="notepad-grid">
-      <article class="feedback-panel notepad-panel">
-        <h3>${escapeHtml(quarterLabel)} Notes</h3>
-        <label>
-          Notes
-          <textarea id="notepad-quarter-notes" rows="7" placeholder="What happened this quarter?">${escapeHtml(quarterEntry.notes || "")}</textarea>
-        </label>
-      </article>
-
-      <article class="feedback-panel notepad-panel">
-        <div class="section-heading report-card-header">
-          <div>
-            <h3>${escapeHtml(quarterLabel)} Message</h3>
-          </div>
-          <button id="copy-quarter-message-btn" type="button">Copy Message</button>
+    <article class="feedback-panel notepad-panel">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>${escapeHtml(quarterLabel)} Message</h3>
         </div>
-        <label>
-          Message
-          <textarea id="notepad-quarter-message" rows="6" placeholder="Your quarter message...">${escapeHtml(quarterEntry.message || "")}</textarea>
-        </label>
-      </article>
-    </div>
+        <button id="copy-quarter-message-btn" type="button">Copy Message</button>
+      </div>
+      <label>
+        Message
+        <textarea id="notepad-quarter-message" rows="6" placeholder="Your quarter message...">${escapeHtml(getNotepadQuarterEntry(selectedQuarter).message || "")}</textarea>
+      </label>
+    </article>
 
     <article class="feedback-panel notepad-panel">
       <div class="section-heading report-card-header">
@@ -1177,20 +1154,10 @@ function renderNotepad() {
 function bindNotepadEvents() {
   elements.notepadContent.querySelectorAll("[data-notepad-quarter]").forEach((button) => {
     button.addEventListener("click", () => {
-      state.notepad.currentQuarter = Number.parseInt(button.dataset.notepadQuarter, 10);
-      saveState();
+      setActiveQuarter(Number.parseInt(button.dataset.notepadQuarter, 10));
       renderNotepad();
     });
   });
-
-  const quarterNotesInput = elements.notepadContent.querySelector("#notepad-quarter-notes");
-  if (quarterNotesInput) {
-    quarterNotesInput.addEventListener("input", () => {
-      const entry = getNotepadQuarterEntry(getSelectedNotepadQuarter());
-      entry.notes = quarterNotesInput.value;
-      saveState();
-    });
-  }
 
   const quarterMessageInput = elements.notepadContent.querySelector("#notepad-quarter-message");
   if (quarterMessageInput) {
@@ -1254,9 +1221,9 @@ function copyReflectionNote() {
 function bindFeedbackTrackerEvents() {
   elements.feedbackTracker.querySelectorAll("[data-feedback-quarter]").forEach((button) => {
     button.addEventListener("click", () => {
-      state.feedback.currentQuarter = Number.parseInt(button.dataset.feedbackQuarter, 10);
-      saveState();
+      setActiveQuarter(Number.parseInt(button.dataset.feedbackQuarter, 10));
       renderFeedbackTracker();
+      renderNotepad();
       renderPostGameReport();
     });
   });
@@ -1277,25 +1244,13 @@ function bindFeedbackTrackerEvents() {
     });
   });
 
-  const addNoteButton = elements.feedbackTracker.querySelector("#add-feedback-note-btn");
-  const clearFeedbackButton = elements.feedbackTracker.querySelector("#clear-player-feedback-btn");
-  const noteInput = elements.feedbackTracker.querySelector("#feedback-note-input");
-
-  if (addNoteButton) {
-    addNoteButton.addEventListener("click", addFeedbackNote);
-  }
-
-  if (noteInput) {
-    noteInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        addFeedbackNote();
-      }
+  const quarterNotesInput = elements.feedbackTracker.querySelector("#feedback-quarter-notes");
+  if (quarterNotesInput) {
+    quarterNotesInput.addEventListener("input", () => {
+      const entry = getNotepadQuarterEntry(getSelectedFeedbackQuarter());
+      entry.notes = quarterNotesInput.value;
+      saveState();
     });
-  }
-
-  if (clearFeedbackButton) {
-    clearFeedbackButton.addEventListener("click", clearSelectedPlayerFeedback);
   }
 }
 
@@ -1520,6 +1475,14 @@ function getSelectedFeedbackQuarter() {
   return clampedQuarter;
 }
 
+function setActiveQuarter(quarterNumber) {
+  const maxQuarter = normalizePositiveNumber(state.settings.periodCount, 4);
+  const clampedQuarter = Math.min(Math.max(normalizePositiveNumber(quarterNumber, 1), 1), maxQuarter);
+  state.feedback.currentQuarter = clampedQuarter;
+  state.notepad.currentQuarter = clampedQuarter;
+  saveState();
+}
+
 function getFeedbackQuarterLabel(quarterNumber) {
   return `${normalizePeriodLabel(state.settings.periodLabel)} ${quarterNumber}`;
 }
@@ -1592,9 +1555,9 @@ function renderPostGameReport() {
 
   elements.postGameReport.querySelectorAll("[data-report-quarter]").forEach((button) => {
     button.addEventListener("click", () => {
-      state.feedback.currentQuarter = Number.parseInt(button.dataset.reportQuarter, 10);
-      saveState();
+      setActiveQuarter(Number.parseInt(button.dataset.reportQuarter, 10));
       renderFeedbackTracker();
+      renderNotepad();
       renderPostGameReport();
     });
   });
@@ -2083,7 +2046,7 @@ function loadState() {
       byPlayerId: parsedState.feedback?.byPlayerId || {},
     };
     state.notepad = {
-      currentQuarter: parsedState.notepad?.currentQuarter || 1,
+      currentQuarter: parsedState.feedback?.currentQuarter || parsedState.notepad?.currentQuarter || 1,
       byQuarter: parsedState.notepad?.byQuarter || {},
       reflection: parsedState.notepad?.reflection || "",
     };

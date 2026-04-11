@@ -283,6 +283,11 @@ label {
   background: rgba(18, 102, 79, 0.1);
 }
 
+.game-notes-panel textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
 .table-wrap {
   overflow-x: auto;
   margin-top: 1rem;

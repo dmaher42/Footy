@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.11.4";
+const APP_VERSION = "2026.04.11.5";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -1724,7 +1724,7 @@ function toggleBenchRulesVisibility() {
 
 function syncBenchRulesVisibility() {
   elements.playerTableWrap.classList.toggle("show-bench-rules", showBenchRules);
-  elements.toggleBenchRulesBtn.textContent = showBenchRules ? "Hide Bench Rules" : "Show Bench Rules";
+  elements.toggleBenchRulesBtn.textContent = showBenchRules ? "Hide Advanced" : "Advanced";
 }
 
 function toggleFullGameReportVisibility() {

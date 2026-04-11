@@ -272,6 +272,17 @@ label {
   margin-top: 0;
 }
 
+.advanced-toggle-btn {
+  padding: 0.45rem 0.65rem;
+  font-size: 0.86rem;
+  background: rgba(18, 102, 79, 0.06);
+  border: 1px solid rgba(18, 102, 79, 0.12);
+}
+
+.advanced-toggle-btn:hover {
+  background: rgba(18, 102, 79, 0.1);
+}
+
 .table-wrap {
   overflow-x: auto;
   margin-top: 1rem;

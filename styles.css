@@ -1021,6 +1021,38 @@ th {
     text-align: center;
   }
 
+  #report-section {
+    padding: 0.75rem 0.45rem;
+  }
+
+  #report-section .post-game-report {
+    gap: 0.75rem;
+  }
+
+  #report-section .feedback-panel,
+  #report-section .report-notes-panel,
+  #report-section .report-card {
+    width: 100%;
+  }
+
+  #report-section .period-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    overflow: visible;
+    padding-inline: 0;
+    scroll-padding-inline: 0;
+  }
+
+  #report-section .period-tab {
+    width: 100%;
+    text-align: center;
+  }
+
+  #report-section .report-notes-panel textarea {
+    min-height: 7rem;
+  }
+
   #rotation-section .rotation-card,
   #rotation-section .board-zone,
   #rotation-section .field-line {

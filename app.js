@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.11.2";
+const APP_VERSION = "2026.04.11.3";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -1050,7 +1050,7 @@ function renderFeedbackTracker() {
 
   elements.feedbackTracker.innerHTML = `
     <div class="feedback-quarter-row">
-      <p class="helper quarter-label">Recording for ${escapeHtml(selectedQuarterLabel)}</p>
+      <p class="quarter-label">${escapeHtml(selectedQuarterLabel)}</p>
       <div class="period-tabs feedback-quarter-tabs">${quarterTabs}</div>
     </div>
 
@@ -1068,7 +1068,6 @@ function renderFeedbackTracker() {
       <div class="section-heading live-feedback-header">
         <div>
           <h3>${escapeHtml(selectedPlayer.name)}</h3>
-          <p class="helper">Tap what you notice in ${escapeHtml(selectedQuarterLabel)}.</p>
         </div>
       </div>
       <div class="feedback-category-grid">${categoryButtons}</div>
@@ -1131,7 +1130,7 @@ function renderNotepad() {
 
   elements.notepadContent.innerHTML = `
     <div class="feedback-quarter-row">
-      <p class="helper quarter-label">Writing for ${escapeHtml(quarterLabel)}</p>
+      <p class="quarter-label">${escapeHtml(quarterLabel)}</p>
       <div class="period-tabs feedback-quarter-tabs">${quarterTabs}</div>
     </div>
 
@@ -1148,7 +1147,6 @@ function renderNotepad() {
         <div class="section-heading report-card-header">
           <div>
             <h3>${escapeHtml(quarterLabel)} Message</h3>
-            <p class="helper">What you want to say at the break.</p>
           </div>
           <button id="copy-quarter-message-btn" type="button">Copy Message</button>
         </div>
@@ -1161,10 +1159,9 @@ function renderNotepad() {
 
     <article class="feedback-panel notepad-panel">
       <div class="section-heading report-card-header">
-        <div>
-          <h3>After Game Reflection</h3>
-          <p class="helper">Big picture notes after the game.</p>
-        </div>
+          <div>
+            <h3>After Game Reflection</h3>
+          </div>
         <button id="copy-reflection-btn" type="button">Copy Reflection</button>
       </div>
       <label>
@@ -1575,7 +1572,6 @@ function renderPostGameReport() {
       <div class="section-heading report-card-header">
         <div>
           <h3>${escapeHtml(getFeedbackQuarterLabel(selectedQuarter))} Summary</h3>
-          <p class="helper">Use this at the break to speak to players quickly.</p>
         </div>
       </div>
       <div class="period-tabs feedback-quarter-tabs">${quarterTabs}</div>
@@ -1587,7 +1583,6 @@ function renderPostGameReport() {
         <div class="section-heading report-card-header">
           <div>
             <h3>Full Game Report</h3>
-            <p class="helper">This combines all quarter feedback for each player.</p>
           </div>
         </div>
         <div class="report-grid">${fullReportCards}</div>

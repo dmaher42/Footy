@@ -94,10 +94,9 @@ select:focus {
 
 .hero {
   display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
+  justify-content: flex-start;
   align-items: center;
-  padding: 0.7rem 0.95rem;
+  padding: 0.55rem 0.8rem;
   border-radius: 16px;
   background:
     linear-gradient(135deg, rgba(18, 102, 79, 0.95), rgba(12, 64, 51, 0.92)),
@@ -106,36 +105,9 @@ select:focus {
   box-shadow: var(--shadow);
 }
 
-.eyebrow {
-  margin: 0 0 0.15rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.68rem;
-  opacity: 0.82;
-}
-
 .hero h1 {
   margin: 0;
-  font-size: clamp(1.15rem, 2.7vw, 1.7rem);
-}
-
-.hero-copy {
-  max-width: 25rem;
-  margin: 0.1rem 0 0;
-  font-size: 0.82rem;
-  line-height: 1.25;
-}
-
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  justify-content: flex-end;
-  min-width: 200px;
-}
-
-.hero-actions button {
-  padding: 0.65rem 0.9rem;
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
 }
 
 .layout {
@@ -282,7 +254,7 @@ label {
 }
 
 .panel-heading {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .full-width {
@@ -367,6 +339,9 @@ th {
 
 .quarter-label {
   margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .feedback-quarter-tabs {
@@ -887,44 +862,11 @@ th {
   }
 
   .hero {
-    flex-direction: column;
-    padding: 0.7rem 0.8rem;
-    align-items: stretch;
-  }
-
-  .eyebrow {
-    margin-bottom: 0.1rem;
+    padding: 0.5rem 0.7rem;
   }
 
   .hero h1 {
-    font-size: 1rem;
-  }
-
-  .hero-copy {
-    margin-top: 0.1rem;
-    font-size: 0.74rem;
-    line-height: 1.2;
-  }
-
-  .hero-actions {
-    width: 100%;
-    min-width: 0;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .mobile-action-bar {
-    position: static;
-    padding: 0;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
-    backdrop-filter: none;
-  }
-
-  .mobile-action-bar button {
-    width: 100%;
-    padding: 0.7rem 0.75rem;
+    font-size: 0.95rem;
   }
 
   .form-grid {

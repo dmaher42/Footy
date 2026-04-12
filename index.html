@@ -20,34 +20,34 @@
   <div class="page">
     <header class="hero">
       <h1>Footy Player Manager</h1>
-    </header>
 
-    <section id="update-panel" class="update-panel">
-      <button id="toggle-update-menu-btn" class="update-menu-btn" type="button" aria-expanded="false">Menu</button>
-      <div id="update-panel-card" class="update-panel-card" hidden>
-        <div class="menu-view-actions">
-          <button class="game-nav-btn active" type="button" data-game-view="rotation">Rotation</button>
-          <button class="game-nav-btn" type="button" data-game-view="feedback">Feedback</button>
-          <button class="game-nav-btn" type="button" data-game-view="notepad">Notepad</button>
-          <button class="game-nav-btn" type="button" data-game-view="report">Report</button>
-        </div>
-        <div class="menu-panel-actions">
-          <button id="edit-setup-btn" type="button">Edit Setup</button>
-          <button id="generate-btn" class="primary" type="button">Generate Rotation</button>
-          <button id="print-btn" type="button">Print / Save PDF</button>
-          <button id="check-update-btn" class="utility-btn" type="button">Check for Update</button>
-        </div>
-        <div id="update-status-panel" class="update-status-panel" hidden>
-          <div class="update-copy">
-            <strong id="update-title">App Update</strong>
-            <p id="update-text">Check for the latest version of the app.</p>
+      <section id="update-panel" class="update-panel">
+        <button id="toggle-update-menu-btn" class="update-menu-btn" type="button" aria-expanded="false">Menu</button>
+        <div id="update-panel-card" class="update-panel-card" hidden>
+          <div class="menu-view-actions">
+            <button class="game-nav-btn active" type="button" data-game-view="rotation">Rotation</button>
+            <button class="game-nav-btn" type="button" data-game-view="feedback">Feedback</button>
+            <button class="game-nav-btn" type="button" data-game-view="notepad">Notepad</button>
+            <button class="game-nav-btn" type="button" data-game-view="report">Report</button>
           </div>
-          <div class="update-actions">
-            <button id="apply-update-btn" class="primary" type="button" hidden>Refresh App</button>
+          <div class="menu-panel-actions">
+            <button id="edit-setup-btn" type="button">Edit Setup</button>
+            <button id="generate-btn" class="primary" type="button">Generate Rotation</button>
+            <button id="print-btn" type="button">Print / Save PDF</button>
+            <button id="check-update-btn" class="utility-btn" type="button">Check for Update</button>
+          </div>
+          <div id="update-status-panel" class="update-status-panel" hidden>
+            <div class="update-copy">
+              <strong id="update-title">App Update</strong>
+              <p id="update-text">Check for the latest version of the app.</p>
+            </div>
+            <div class="update-actions">
+              <button id="apply-update-btn" class="primary" type="button" hidden>Refresh App</button>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </header>
 
     <div id="setup-backdrop" class="setup-backdrop" hidden></div>
     <aside id="setup-panel" class="setup-panel" aria-hidden="true">

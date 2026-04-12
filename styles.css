@@ -93,11 +93,11 @@ select:focus {
 }
 
 .hero {
-  position: relative;
   display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  padding: 0.55rem 7rem 0.55rem 0.8rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.7rem 0.8rem;
   border-radius: 16px;
   background:
     linear-gradient(135deg, rgba(18, 102, 79, 0.95), rgba(12, 64, 51, 0.92)),
@@ -118,13 +118,12 @@ select:focus {
 }
 
 .update-panel {
-  position: absolute;
-  right: 0.6rem;
-  top: 0.6rem;
+  position: relative;
   z-index: 50;
   display: grid;
   justify-items: end;
   gap: 0.6rem;
+  margin-left: auto;
 }
 
 .update-menu-btn {
@@ -880,7 +879,7 @@ th {
   }
 
   .hero {
-    padding: 0.5rem 4.75rem 0.5rem 0.7rem;
+    padding: 0.55rem 0.7rem;
   }
 
   .hero h1 {
@@ -892,10 +891,6 @@ th {
   }
 
   .update-panel {
-    top: 0.45rem;
-    right: 0.45rem;
-    left: auto;
-    bottom: auto;
     justify-items: end;
   }
 

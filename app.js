@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.11.10";
+const APP_VERSION = "2026.04.11.11";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -132,7 +132,7 @@ const elements = {
 
 let currentRotationPlan = null;
 let isSetupOpen = false;
-let activeGameView = "rotation";
+let activeGameView = "feedback";
 let activeRotationPeriod = 0;
 let selectedFieldPlayerId = "";
 let selectedBenchPlayerId = "";

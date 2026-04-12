@@ -1,11 +1,11 @@
 (function () {
   const CATEGORY_META = [
-    { id: "effort", label: "Effort", icon: "💪", helper: "Repeat efforts, chase, compete" },
-    { id: "defence", label: "Defence", icon: "🛡", helper: "Spoil, stop, defend role" },
-    { id: "attack", label: "Attack", icon: "⚡", helper: "Drive, create, score involvement" },
-    { id: "teamacts", label: "Team Acts", icon: "🤝", helper: "Support, shepherd, selfless play" },
+    { id: "effort", label: "Effort", icon: "💪", helper: "Chase, compete, repeat" },
+    { id: "defence", label: "Defence", icon: "🛡", helper: "Spoil, stop, defend" },
+    { id: "attack", label: "Attack", icon: "⚡", helper: "Drive, create, score" },
+    { id: "teamacts", label: "Team Acts", icon: "🤝", helper: "Support, shepherd, selfless" },
     { id: "voice", label: "Voice", icon: "🗣", helper: "Talk, organise, direct" },
-    { id: "teamacts_old", label: "1%ers", icon: "🧠", helper: "Little efforts that shift contests" },
+    { id: "teamacts_old", label: "1%ers", icon: "🧠", helper: "Little efforts that shift play" },
   ];
   let focusReturnUntil = 0;
   let clearFocusTimer = null;
@@ -37,7 +37,7 @@
 
     const helper = document.createElement("p");
     helper.className = "game-notes-helper";
-    helper.textContent = "Best used during breaks or quarter-time.";
+    helper.textContent = "Use during breaks.";
     heading.insertAdjacentElement("afterend", helper);
   }
 
@@ -178,8 +178,8 @@
     heading.className = "section-heading report-card-header";
     heading.innerHTML = `
       <div>
-        <h3>Quarter-Time Snapshot</h3>
-        <p class="report-quarter-summary-helper">Fast recall for who stood out and what to say.</p>
+        <h3>Quarter Summary</h3>
+        <p class="report-quarter-summary-helper">Quick recall for quarter time.</p>
       </div>
     `;
 
@@ -189,7 +189,7 @@
     const topPlayersCard = document.createElement("section");
     topPlayersCard.className = "summary-metric-card";
     topPlayersCard.innerHTML = `
-      <h4>Top Marked Players</h4>
+      <h4>Top Players</h4>
       <ul class="summary-metric-list">
         ${entries.slice(0, 3).map((entry) => `<li><strong>${entry.playerName}</strong><span>${entry.totalMarks} marks</span></li>`).join("")}
       </ul>
@@ -198,7 +198,7 @@
     const topCategoriesCard = document.createElement("section");
     topCategoriesCard.className = "summary-metric-card";
     topCategoriesCard.innerHTML = `
-      <h4>Team Category Totals</h4>
+      <h4>Team Positives</h4>
       <ul class="summary-metric-list category-totals-list">
         ${categoryTotals.length
           ? categoryTotals.map((entry) => `<li><strong>${entry.label}</strong><span>${entry.count}</span></li>`).join("")
@@ -209,7 +209,7 @@
     const notesCard = document.createElement("section");
     notesCard.className = "summary-metric-card";
     notesCard.innerHTML = `
-      <h4>Notes Preview</h4>
+      <h4>Notes</h4>
       <p class="summary-note-preview">${notesPreview}</p>
     `;
 

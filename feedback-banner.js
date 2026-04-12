@@ -1,14 +1,18 @@
 (function () {
   const CATEGORY_META = [
-    { id: "effort", label: "Effort" },
-    { id: "defence", label: "Defence" },
-    { id: "attack", label: "Attack" },
-    { id: "teamacts", label: "Team Acts" },
-    { id: "voice", label: "Voice" },
-    { id: "teamacts_old", label: "1%ers" },
+    { id: "effort", label: "Effort", icon: "💪", helper: "Repeat efforts, chase, compete" },
+    { id: "defence", label: "Defence", icon: "🛡", helper: "Spoil, stop, defend role" },
+    { id: "attack", label: "Attack", icon: "⚡", helper: "Drive, create, score involvement" },
+    { id: "teamacts", label: "Team Acts", icon: "🤝", helper: "Support, shepherd, selfless play" },
+    { id: "voice", label: "Voice", icon: "🗣", helper: "Talk, organise, direct" },
+    { id: "teamacts_old", label: "1%ers", icon: "🧠", helper: "Little efforts that shift contests" },
   ];
   let focusReturnUntil = 0;
   let clearFocusTimer = null;
+
+  function getCategoryMeta(categoryId) {
+    return CATEGORY_META.find((category) => category.id === categoryId) || null;
+  }
 
   function injectGameNotesReminder() {
     const tracker = document.querySelector("#feedback-tracker");
@@ -35,6 +39,43 @@
     helper.className = "game-notes-helper";
     helper.textContent = "Best used during breaks or quarter-time.";
     heading.insertAdjacentElement("afterend", helper);
+  }
+
+  function injectCategoryHelpers() {
+    const tracker = document.querySelector("#feedback-tracker");
+    if (!tracker) {
+      return;
+    }
+
+    tracker.querySelectorAll("[data-category-id]").forEach((button) => {
+      const categoryId = button.dataset.categoryId;
+      const meta = getCategoryMeta(categoryId);
+      if (!meta) {
+        return;
+      }
+
+      const countBadge = button.querySelector("strong");
+      if (!countBadge) {
+        return;
+      }
+
+      let copyWrap = button.querySelector(".feedback-category-copy");
+      if (!copyWrap) {
+        const existingLeadingSpan = button.querySelector("span");
+        if (existingLeadingSpan) {
+          existingLeadingSpan.remove();
+        }
+
+        copyWrap = document.createElement("span");
+        copyWrap.className = "feedback-category-copy";
+        button.insertBefore(copyWrap, countBadge);
+      }
+
+      copyWrap.innerHTML = `
+        <span class="feedback-category-title">${meta.icon} ${meta.label}</span>
+        <span class="feedback-category-helper">${meta.helper}</span>
+      `;
+    });
   }
 
   function scheduleFocusReturnCue() {
@@ -97,8 +138,7 @@
 
     return totals
       .filter((category) => category.count > 0)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3);
+      .sort((a, b) => b.count - a.count);
   }
 
   function injectQuarterSummaryBlock() {
@@ -158,8 +198,8 @@
     const topCategoriesCard = document.createElement("section");
     topCategoriesCard.className = "summary-metric-card";
     topCategoriesCard.innerHTML = `
-      <h4>Strongest Positives</h4>
-      <ul class="summary-metric-list">
+      <h4>Team Category Totals</h4>
+      <ul class="summary-metric-list category-totals-list">
         ${categoryTotals.length
           ? categoryTotals.map((entry) => `<li><strong>${entry.label}</strong><span>${entry.count}</span></li>`).join("")
           : `<li><strong>No category totals yet</strong><span>—</span></li>`}
@@ -223,6 +263,7 @@
 
   function applyFeedbackEnhancements() {
     injectGameNotesReminder();
+    injectCategoryHelpers();
   }
 
   const originalRenderFeedbackTracker = window.renderFeedbackTracker;

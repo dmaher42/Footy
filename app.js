@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.13.3";
+const APP_VERSION = "2026.04.13.4";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -92,6 +92,11 @@ const state = {
     draft: createEmptyGameReviewDraft(),
     items: [],
   },
+  trainingPlans: {
+    selectedPlanId: null,
+    draft: createEmptyTrainingPlanDraft(),
+    items: [],
+  },
 };
 
 const elements = {
@@ -107,6 +112,7 @@ const elements = {
   rotationSection: document.querySelector("#rotation-section"),
   feedbackSection: document.querySelector("#feedback-section"),
   gameReviewsSection: document.querySelector("#game-reviews-section"),
+  trainingPlansSection: document.querySelector("#training-plans-section"),
   notepadSection: document.querySelector("#notepad-section"),
   reportSection: document.querySelector("#report-section"),
   periodLabel: document.querySelector("#period-label"),
@@ -125,6 +131,7 @@ const elements = {
   setupPanel: document.querySelector("#setup-panel"),
   copyFeedbackBtn: document.querySelector("#copy-feedback-btn"),
   gameReviewsContent: document.querySelector("#game-reviews-content"),
+  trainingPlansContent: document.querySelector("#training-plans-content"),
   toggleFullReportBtn: document.querySelector("#toggle-full-report-btn"),
   copyReportBtn: document.querySelector("#copy-report-btn"),
   feedbackTracker: document.querySelector("#feedback-tracker"),
@@ -528,6 +535,7 @@ function render() {
   }
   renderFeedbackTracker();
   renderGameReviews();
+  renderTrainingPlans();
   renderNotepad();
   renderPostGameReport();
 }
@@ -968,6 +976,7 @@ function refreshPlanAndRender() {
   }
   renderFeedbackTracker();
   renderGameReviews();
+  renderTrainingPlans();
   renderPostGameReport();
 }
 
@@ -997,6 +1006,7 @@ function syncGameView() {
   const viewMap = {
     feedback: elements.feedbackSection,
     gameReviews: elements.gameReviewsSection,
+    trainingPlans: elements.trainingPlansSection,
     notepad: elements.notepadSection,
     report: elements.reportSection,
   };
@@ -1538,6 +1548,349 @@ function getGameReviewLabel(review) {
 }
 
 function formatGameReviewDate(value) {
+  if (!value) {
+    return "Just saved";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Just saved";
+  }
+
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function renderTrainingPlans() {
+  const content = elements.trainingPlansContent;
+  if (!content) {
+    return;
+  }
+
+  state.trainingPlans.draft = normalizeTrainingPlanDraft(state.trainingPlans.draft);
+  const activePlan = getSelectedTrainingPlan();
+  const draft = activePlan
+    ? cloneTrainingPlanDraft(state.trainingPlans.draft)
+    : state.trainingPlans.draft;
+  const planTitle = activePlan
+    ? `Editing ${getTrainingPlanLabel(activePlan)}`
+    : "New Training Plan";
+  const planHelper = activePlan
+    ? `Last saved ${formatTrainingPlanDate(activePlan.updatedAt)}.`
+    : "Capture the main training session details and save them here.";
+  const saveDisabled = !activePlan && isTrainingPlanDraftEmpty(draft);
+  const savedPlans = [...state.trainingPlans.items].reverse();
+
+  const planListMarkup = savedPlans.length
+    ? savedPlans.map((plan) => `
+      <button class="review-list-item ${plan.id === state.trainingPlans.selectedPlanId ? "active" : ""}" type="button" data-training-plan-id="${plan.id}">
+        <span class="review-list-title">${escapeHtml(getTrainingPlanLabel(plan))}</span>
+        <span class="review-list-meta">${escapeHtml(plan.date || "No date recorded")} · ${escapeHtml(formatTrainingPlanDate(plan.updatedAt))}</span>
+      </button>
+    `).join("")
+    : '<p class="placeholder">No training plans saved yet.</p>';
+
+  content.innerHTML = `
+    <article class="feedback-panel training-plan-editor">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>${escapeHtml(planTitle)}</h3>
+          <p class="helper">${escapeHtml(planHelper)}</p>
+        </div>
+        <div class="inline-actions compact-actions">
+          <button id="new-training-plan-btn" type="button">New Plan</button>
+          <button id="save-training-plan-btn" class="primary" type="button" ${saveDisabled ? "disabled" : ""}>Save Plan</button>
+        </div>
+      </div>
+
+      <div class="review-form-grid">
+        <label>
+          Title
+          <input id="training-plan-title" type="text" value="${escapeHtml(draft.title)}" placeholder="Session title">
+        </label>
+        <label>
+          Date
+          <input id="training-plan-date" type="date" value="${escapeHtml(draft.date)}">
+        </label>
+        <label class="review-full-width">
+          Session Purpose
+          <textarea id="training-plan-purpose" rows="3" placeholder="What is the purpose of the session?">${escapeHtml(draft.sessionPurpose)}</textarea>
+        </label>
+        <label>
+          Expected Numbers
+          <input id="training-plan-numbers" type="text" value="${escapeHtml(draft.expectedNumbers)}" placeholder="e.g. 14-18">
+        </label>
+        <label>
+          Duration
+          <input id="training-plan-duration" type="text" value="${escapeHtml(draft.duration)}" placeholder="e.g. 60 minutes">
+        </label>
+        <label class="review-full-width">
+          Warm-up
+          <textarea id="training-plan-warm-up" rows="3" placeholder="Warm-up plan...">${escapeHtml(draft.warmUp)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Fundamentals
+          <textarea id="training-plan-fundamentals" rows="3" placeholder="Fundamentals focus...">${escapeHtml(draft.fundamentals)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Main Drills
+          <textarea id="training-plan-main-drills" rows="4" placeholder="Main drills for the night...">${escapeHtml(draft.mainDrills)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Game Play / Conditioned Game
+          <textarea id="training-plan-game-play" rows="4" placeholder="Conditioned game or match play...">${escapeHtml(draft.gamePlayConditionedGame)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Coaching Cues
+          <textarea id="training-plan-cues" rows="3" placeholder="Key coaching cues...">${escapeHtml(draft.coachingCues)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Notes / Review for Next Time
+          <textarea id="training-plan-notes" rows="4" placeholder="What to remember next time...">${escapeHtml(draft.notesReviewNextTime)}</textarea>
+        </label>
+      </div>
+    </article>
+
+    <article class="feedback-panel training-plan-list-panel">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>Saved Plans</h3>
+        </div>
+      </div>
+      <div class="review-list">
+        ${planListMarkup}
+      </div>
+    </article>
+  `;
+
+  bindTrainingPlansEvents();
+}
+
+function bindTrainingPlansEvents() {
+  const content = elements.trainingPlansContent;
+  if (!content) {
+    return;
+  }
+
+  const newPlanBtn = content.querySelector("#new-training-plan-btn");
+  if (newPlanBtn) {
+    newPlanBtn.addEventListener("click", startNewTrainingPlan);
+  }
+
+  const savePlanBtn = content.querySelector("#save-training-plan-btn");
+  if (savePlanBtn) {
+    savePlanBtn.addEventListener("click", saveTrainingPlanDraft);
+  }
+
+  const fieldMap = [
+    ["#training-plan-title", "title"],
+    ["#training-plan-date", "date"],
+    ["#training-plan-purpose", "sessionPurpose"],
+    ["#training-plan-numbers", "expectedNumbers"],
+    ["#training-plan-duration", "duration"],
+    ["#training-plan-warm-up", "warmUp"],
+    ["#training-plan-fundamentals", "fundamentals"],
+    ["#training-plan-main-drills", "mainDrills"],
+    ["#training-plan-game-play", "gamePlayConditionedGame"],
+    ["#training-plan-cues", "coachingCues"],
+    ["#training-plan-notes", "notesReviewNextTime"],
+  ];
+
+  fieldMap.forEach(([selector, field]) => {
+    const input = content.querySelector(selector);
+    if (!input) {
+      return;
+    }
+
+    input.addEventListener("input", () => {
+      state.trainingPlans.draft[field] = input.value;
+      saveState();
+      syncTrainingPlanActionState();
+    });
+  });
+
+  content.querySelectorAll("[data-training-plan-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      loadTrainingPlanIntoDraft(button.dataset.trainingPlanId);
+    });
+  });
+
+  syncTrainingPlanActionState();
+}
+
+function syncTrainingPlanActionState() {
+  const savePlanBtn = elements.trainingPlansContent?.querySelector("#save-training-plan-btn");
+  if (!savePlanBtn) {
+    return;
+  }
+
+  savePlanBtn.disabled = !state.trainingPlans.selectedPlanId && isTrainingPlanDraftEmpty(state.trainingPlans.draft);
+}
+
+function startNewTrainingPlan() {
+  if (isTrainingPlanDraftDirty()) {
+    const confirmed = window.confirm("Discard the current training plan draft and start a new one?");
+    if (!confirmed) {
+      return;
+    }
+  }
+
+  state.trainingPlans.selectedPlanId = null;
+  state.trainingPlans.draft = createEmptyTrainingPlanDraft();
+  saveState();
+  renderTrainingPlans();
+}
+
+function saveTrainingPlanDraft() {
+  const draft = normalizeTrainingPlanDraft(state.trainingPlans.draft);
+  const hasDraftContent = !isTrainingPlanDraftEmpty(draft);
+  const selectedPlan = getSelectedTrainingPlan();
+
+  if (!hasDraftContent && !selectedPlan) {
+    return;
+  }
+
+  const now = new Date().toISOString();
+
+  if (selectedPlan) {
+    Object.assign(selectedPlan, draft, {
+      updatedAt: now,
+      createdAt: selectedPlan.createdAt || now,
+    });
+  } else {
+    const plan = {
+      id: createId(),
+      ...draft,
+      createdAt: now,
+      updatedAt: now,
+    };
+    state.trainingPlans.items.push(plan);
+    state.trainingPlans.selectedPlanId = plan.id;
+  }
+
+  const savedPlan = getSelectedTrainingPlan();
+  if (savedPlan) {
+    state.trainingPlans.draft = cloneTrainingPlanDraft(savedPlan);
+  }
+
+  saveState();
+  renderTrainingPlans();
+}
+
+function loadTrainingPlanIntoDraft(planId) {
+  const plan = state.trainingPlans.items.find((entry) => entry.id === planId);
+  if (!plan) {
+    return;
+  }
+
+  if (isTrainingPlanDraftDirty() && state.trainingPlans.selectedPlanId !== planId) {
+    const confirmed = window.confirm("Discard the current training plan draft and open another plan?");
+    if (!confirmed) {
+      return;
+    }
+  }
+
+  state.trainingPlans.selectedPlanId = plan.id;
+  state.trainingPlans.draft = cloneTrainingPlanDraft(plan);
+  saveState();
+  renderTrainingPlans();
+}
+
+function getSelectedTrainingPlan() {
+  if (!state.trainingPlans.selectedPlanId) {
+    return null;
+  }
+
+  return state.trainingPlans.items.find((plan) => plan.id === state.trainingPlans.selectedPlanId) || null;
+}
+
+function cloneTrainingPlanDraft(plan) {
+  const normalized = normalizeTrainingPlanDraft(plan);
+  return { ...normalized };
+}
+
+function createEmptyTrainingPlanDraft() {
+  return {
+    title: "",
+    date: "",
+    sessionPurpose: "",
+    expectedNumbers: "",
+    duration: "",
+    warmUp: "",
+    fundamentals: "",
+    mainDrills: "",
+    gamePlayConditionedGame: "",
+    coachingCues: "",
+    notesReviewNextTime: "",
+  };
+}
+
+function normalizeTrainingPlanDraft(plan) {
+  const source = plan && typeof plan === "object" ? plan : {};
+  const blank = createEmptyTrainingPlanDraft();
+
+  return {
+    title: `${source.title ?? blank.title}`,
+    date: `${source.date ?? blank.date}`,
+    sessionPurpose: `${source.sessionPurpose ?? blank.sessionPurpose}`,
+    expectedNumbers: `${source.expectedNumbers ?? blank.expectedNumbers}`,
+    duration: `${source.duration ?? blank.duration}`,
+    warmUp: `${source.warmUp ?? blank.warmUp}`,
+    fundamentals: `${source.fundamentals ?? blank.fundamentals}`,
+    mainDrills: `${source.mainDrills ?? blank.mainDrills}`,
+    gamePlayConditionedGame: `${source.gamePlayConditionedGame ?? blank.gamePlayConditionedGame}`,
+    coachingCues: `${source.coachingCues ?? blank.coachingCues}`,
+    notesReviewNextTime: `${source.notesReviewNextTime ?? blank.notesReviewNextTime}`,
+  };
+}
+
+function normalizeTrainingPlanItem(plan) {
+  const source = plan && typeof plan === "object" ? plan : {};
+  const draft = normalizeTrainingPlanDraft(source);
+
+  return {
+    id: `${source.id || createId()}`,
+    ...draft,
+    createdAt: source.createdAt || source.updatedAt || new Date().toISOString(),
+    updatedAt: source.updatedAt || source.createdAt || new Date().toISOString(),
+  };
+}
+
+function isTrainingPlanDraftEmpty(draft) {
+  const normalized = normalizeTrainingPlanDraft(draft);
+  return Object.values(normalized).every((value) => `${value}`.trim() === "");
+}
+
+function isTrainingPlanDraftDirty() {
+  const selectedPlan = getSelectedTrainingPlan();
+  if (!selectedPlan) {
+    return !isTrainingPlanDraftEmpty(state.trainingPlans.draft);
+  }
+
+  return !areTrainingPlanEntriesEqual(selectedPlan, state.trainingPlans.draft);
+}
+
+function areTrainingPlanEntriesEqual(left, right) {
+  const leftDraft = normalizeTrainingPlanDraft(left);
+  const rightDraft = normalizeTrainingPlanDraft(right);
+
+  return Object.keys(leftDraft).every((key) => `${leftDraft[key]}` === `${rightDraft[key]}`);
+}
+
+function getTrainingPlanLabel(plan) {
+  const title = `${plan?.title || ""}`.trim();
+  if (title) {
+    return title;
+  }
+
+  const date = `${plan?.date || ""}`.trim();
+  return date || "Untitled Plan";
+}
+
+function formatTrainingPlanDate(value) {
   if (!value) {
     return "Just saved";
   }
@@ -2421,6 +2774,7 @@ function saveState() {
     feedback: state.feedback,
     notepad: state.notepad,
     gameReviews: state.gameReviews,
+    trainingPlans: state.trainingPlans,
   });
   window.localStorage.setItem(STORAGE_KEY, payload);
 }
@@ -2484,6 +2838,42 @@ function loadState() {
       selectedReviewId,
       draft,
       items,
+    };
+
+    const loadedTrainingPlans = Array.isArray(parsedState.trainingPlans)
+      ? { items: parsedState.trainingPlans }
+      : (parsedState.trainingPlans && typeof parsedState.trainingPlans === "object"
+        ? parsedState.trainingPlans
+        : {});
+    const trainingItems = Array.isArray(loadedTrainingPlans.items)
+      ? loadedTrainingPlans.items.map((plan) => normalizeTrainingPlanItem(plan))
+      : [];
+    let selectedPlanId = loadedTrainingPlans.selectedPlanId || null;
+    let trainingDraft = normalizeTrainingPlanDraft(loadedTrainingPlans.draft);
+
+    if (selectedPlanId && !trainingItems.some((plan) => plan.id === selectedPlanId)) {
+      selectedPlanId = null;
+    }
+
+    if (!selectedPlanId && trainingItems.length) {
+      const latestPlan = trainingItems[trainingItems.length - 1];
+      selectedPlanId = latestPlan.id;
+      if (isTrainingPlanDraftEmpty(trainingDraft)) {
+        trainingDraft = cloneTrainingPlanDraft(latestPlan);
+      }
+    }
+
+    if (selectedPlanId && isTrainingPlanDraftEmpty(trainingDraft)) {
+      const selectedPlan = trainingItems.find((plan) => plan.id === selectedPlanId);
+      if (selectedPlan) {
+        trainingDraft = cloneTrainingPlanDraft(selectedPlan);
+      }
+    }
+
+    state.trainingPlans = {
+      selectedPlanId,
+      draft: trainingDraft,
+      items: trainingItems,
     };
   } catch (error) {
     console.error("Could not load saved app data.", error);

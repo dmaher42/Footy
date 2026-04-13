@@ -8,13 +8,13 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Footy Feedback">
-  <meta name="app-version" content="2026.04.13.3">
+    <meta name="app-version" content="2026.04.13.4">
   <title>Footy Feedback</title>
-  <link rel="manifest" href="manifest.json?v=2026.04.13.3">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2026.04.13.3">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2026.04.13.3">
-  <link rel="stylesheet" href="styles.css?v=2026.04.13.3">
-  <link rel="stylesheet" href="feedback-banner.css?v=2026.04.13.3">
+    <link rel="manifest" href="manifest.json?v=2026.04.13.4">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2026.04.13.4">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2026.04.13.4">
+    <link rel="stylesheet" href="styles.css?v=2026.04.13.4">
+    <link rel="stylesheet" href="feedback-banner.css?v=2026.04.13.4">
 </head>
 <body>
   <div class="page">
@@ -27,6 +27,7 @@
           <div class="menu-view-actions">
             <button class="game-nav-btn active" type="button" data-game-view="feedback">Feedback</button>
             <button class="game-nav-btn" type="button" data-game-view="gameReviews">Game Reviews</button>
+            <button class="game-nav-btn" type="button" data-game-view="trainingPlans">Training Plans</button>
             <button class="game-nav-btn" type="button" data-game-view="notepad">Notepad</button>
             <button class="game-nav-btn" type="button" data-game-view="report">Report</button>
           </div>
@@ -157,6 +158,15 @@
         <div id="game-reviews-content"></div>
       </section>
 
+      <section id="training-plans-section" class="card game-view-section" hidden>
+        <div class="section-heading panel-heading">
+          <div>
+            <h2>Training Plans</h2>
+          </div>
+        </div>
+        <div id="training-plans-content"></div>
+      </section>
+
       <section id="notepad-section" class="card game-view-section" hidden>
         <div class="section-heading panel-heading">
           <div>
@@ -211,7 +221,7 @@
     </tr>
   </template>
 
-  <script src="app.js?v=2026.04.13.3"></script>
-  <script src="feedback-banner.js?v=2026.04.13.3"></script>
-</body>
-</html>
+    <script src="app.js?v=2026.04.13.4"></script>
+    <script src="feedback-banner.js?v=2026.04.13.4"></script>
+  </body>
+  </html>

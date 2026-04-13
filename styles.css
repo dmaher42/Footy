@@ -181,7 +181,9 @@ select:focus {
 }
 
 .game-review-editor,
-.game-review-list-panel {
+.game-review-list-panel,
+.training-plan-editor,
+.training-plan-list-panel {
   display: grid;
   gap: 1rem;
 }

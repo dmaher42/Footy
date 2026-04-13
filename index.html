@@ -4,38 +4,37 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#12664f">
-  <meta name="description" content="Footy Player Manager for planning rotations and bench changes.">
+  <meta name="description" content="Footy feedback, notes, and reports for game day.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Footy Manager">
-  <meta name="app-version" content="2026.04.11.13">
-  <title>Footy Player Manager</title>
-  <link rel="manifest" href="manifest.json?v=2026.04.11.13">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2026.04.11.13">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2026.04.11.13">
-  <link rel="stylesheet" href="styles.css?v=2026.04.11.13">
-  <link rel="stylesheet" href="feedback-banner.css?v=2026.04.12.1">
+  <meta name="apple-mobile-web-app-title" content="Footy Feedback">
+  <meta name="app-version" content="2026.04.13.1">
+  <title>Footy Feedback</title>
+  <link rel="manifest" href="manifest.json?v=2026.04.13.1">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2026.04.13.1">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2026.04.13.1">
+  <link rel="stylesheet" href="styles.css?v=2026.04.13.1">
+  <link rel="stylesheet" href="feedback-banner.css?v=2026.04.13.1">
 </head>
 <body>
   <div class="page">
     <header class="hero">
-      <h1>Footy Player Manager</h1>
+      <h1>Footy Feedback</h1>
 
       <section id="update-panel" class="update-panel">
         <button id="toggle-update-menu-btn" class="update-menu-btn" type="button" aria-expanded="false">Menu</button>
         <div id="update-panel-card" class="update-panel-card" hidden>
           <div class="menu-view-actions">
-            <button class="game-nav-btn active" type="button" data-game-view="rotation">Rotation</button>
-            <button class="game-nav-btn" type="button" data-game-view="feedback">Feedback</button>
-            <button class="game-nav-btn" type="button" data-game-view="notepad">Notepad</button>
-            <button class="game-nav-btn" type="button" data-game-view="report">Report</button>
-          </div>
-          <div class="menu-panel-actions">
-            <button id="edit-setup-btn" type="button">Edit Setup</button>
-            <button id="generate-btn" class="primary" type="button">Generate Rotation</button>
-            <button id="print-btn" type="button">Print / Save PDF</button>
-            <button id="check-update-btn" class="utility-btn" type="button">Check for Update</button>
-          </div>
+          <button class="game-nav-btn" type="button" data-game-view="feedback">Feedback</button>
+          <button class="game-nav-btn" type="button" data-game-view="notepad">Notepad</button>
+          <button class="game-nav-btn" type="button" data-game-view="report">Report</button>
+        </div>
+        <div class="menu-panel-actions">
+          <button id="edit-setup-btn" type="button">Players</button>
+          <button id="generate-btn" class="primary" type="button" hidden>Generate Rotation</button>
+          <button id="print-btn" type="button" hidden>Print / Save PDF</button>
+          <button id="check-update-btn" class="utility-btn" type="button">Check for Update</button>
+        </div>
           <div id="update-status-panel" class="update-status-panel" hidden>
             <div class="update-copy">
               <strong id="update-title">App Update</strong>
@@ -54,12 +53,12 @@
       <div class="setup-panel-shell">
         <div class="setup-panel-header">
           <div>
-            <h2>Setup</h2>
+            <h2>Players</h2>
           </div>
           <button id="close-setup-btn" type="button">Close</button>
         </div>
 
-        <section class="card">
+        <section class="card" hidden>
           <h2>Game Settings</h2>
           <div class="form-grid">
             <label>
@@ -83,7 +82,7 @@
               <h2>Players</h2>
             </div>
             <div class="inline-actions compact-actions setup-heading-actions">
-              <button id="toggle-bench-rules-btn" class="advanced-toggle-btn" type="button">Advanced</button>
+              <button id="toggle-bench-rules-btn" class="advanced-toggle-btn" type="button" hidden>Advanced</button>
               <button id="clear-all-btn" type="button" class="danger-text">Clear All Players</button>
             </div>
           </div>
@@ -114,7 +113,7 @@
           </div>
         </section>
 
-        <div class="setup-panel-actions">
+        <div class="setup-panel-actions" hidden>
           <div class="setup-panel-primary-actions">
             <button id="generate-close-btn" class="primary" type="button">Generate And Close</button>
           </div>
@@ -123,7 +122,7 @@
     </aside>
 
     <main class="layout">
-      <section id="rotation-section" class="card primary-panel game-view-section">
+      <section id="rotation-section" class="card primary-panel game-view-section" hidden>
         <div class="section-heading panel-heading">
           <div>
             <h2>Rotation Plan</h2>
@@ -202,7 +201,7 @@
     </tr>
   </template>
 
-  <script src="app.js?v=2026.04.11.13"></script>
-  <script src="feedback-banner.js?v=2026.04.12.1"></script>
+  <script src="app.js?v=2026.04.13.1"></script>
+  <script src="feedback-banner.js?v=2026.04.13.1"></script>
 </body>
 </html>

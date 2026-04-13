@@ -1,7 +1,7 @@
 {
-  "name": "Footy Player Manager",
-  "short_name": "Footy Manager",
-  "description": "Personal footy player rotation and bench planner.",
+  "name": "Footy Feedback",
+  "short_name": "Footy Feedback",
+  "description": "Footy feedback, notes, and reports for game day.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

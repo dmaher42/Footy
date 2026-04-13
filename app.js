@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.13.4";
+const APP_VERSION = "2026.04.13.5";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -97,6 +97,11 @@ const state = {
     draft: createEmptyTrainingPlanDraft(),
     items: [],
   },
+  weeklyFocus: {
+    selectedFocusId: null,
+    draft: createEmptyWeeklyFocusDraft(),
+    items: [],
+  },
 };
 
 const elements = {
@@ -113,6 +118,7 @@ const elements = {
   feedbackSection: document.querySelector("#feedback-section"),
   gameReviewsSection: document.querySelector("#game-reviews-section"),
   trainingPlansSection: document.querySelector("#training-plans-section"),
+  weeklyFocusSection: document.querySelector("#weekly-focus-section"),
   notepadSection: document.querySelector("#notepad-section"),
   reportSection: document.querySelector("#report-section"),
   periodLabel: document.querySelector("#period-label"),
@@ -132,6 +138,7 @@ const elements = {
   copyFeedbackBtn: document.querySelector("#copy-feedback-btn"),
   gameReviewsContent: document.querySelector("#game-reviews-content"),
   trainingPlansContent: document.querySelector("#training-plans-content"),
+  weeklyFocusContent: document.querySelector("#weekly-focus-content"),
   toggleFullReportBtn: document.querySelector("#toggle-full-report-btn"),
   copyReportBtn: document.querySelector("#copy-report-btn"),
   feedbackTracker: document.querySelector("#feedback-tracker"),
@@ -536,6 +543,7 @@ function render() {
   renderFeedbackTracker();
   renderGameReviews();
   renderTrainingPlans();
+  renderWeeklyFocus();
   renderNotepad();
   renderPostGameReport();
 }
@@ -977,6 +985,7 @@ function refreshPlanAndRender() {
   renderFeedbackTracker();
   renderGameReviews();
   renderTrainingPlans();
+  renderWeeklyFocus();
   renderPostGameReport();
 }
 
@@ -1007,6 +1016,7 @@ function syncGameView() {
     feedback: elements.feedbackSection,
     gameReviews: elements.gameReviewsSection,
     trainingPlans: elements.trainingPlansSection,
+    weeklyFocus: elements.weeklyFocusSection,
     notepad: elements.notepadSection,
     report: elements.reportSection,
   };
@@ -1907,6 +1917,321 @@ function formatTrainingPlanDate(value) {
   });
 }
 
+function renderWeeklyFocus() {
+  const content = elements.weeklyFocusContent;
+  if (!content) {
+    return;
+  }
+
+  state.weeklyFocus.draft = normalizeWeeklyFocusDraft(state.weeklyFocus.draft);
+  const activeFocus = getSelectedWeeklyFocus();
+  const draft = activeFocus
+    ? cloneWeeklyFocusDraft(state.weeklyFocus.draft)
+    : state.weeklyFocus.draft;
+  const focusTitle = activeFocus
+    ? `Editing ${getWeeklyFocusLabel(activeFocus)}`
+    : "New Weekly Focus";
+  const focusHelper = activeFocus
+    ? `Last saved ${formatWeeklyFocusDate(activeFocus.updatedAt)}.`
+    : "Capture the main weekly theme and save it here.";
+  const saveDisabled = !activeFocus && isWeeklyFocusDraftEmpty(draft);
+  const savedFocusEntries = [...state.weeklyFocus.items].reverse();
+
+  const focusListMarkup = savedFocusEntries.length
+    ? savedFocusEntries.map((entry) => `
+      <button class="review-list-item ${entry.id === state.weeklyFocus.selectedFocusId ? "active" : ""}" type="button" data-weekly-focus-id="${entry.id}">
+        <span class="review-list-title">${escapeHtml(getWeeklyFocusLabel(entry))}</span>
+        <span class="review-list-meta">${escapeHtml(entry.context || "No context recorded")} · ${escapeHtml(formatWeeklyFocusDate(entry.updatedAt))}</span>
+      </button>
+    `).join("")
+    : '<p class="placeholder">No weekly focus entries saved yet.</p>';
+
+  content.innerHTML = `
+    <article class="feedback-panel weekly-focus-editor">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>${escapeHtml(focusTitle)}</h3>
+          <p class="helper">${escapeHtml(focusHelper)}</p>
+        </div>
+        <div class="inline-actions compact-actions">
+          <button id="new-weekly-focus-btn" type="button">New Focus</button>
+          <button id="save-weekly-focus-btn" class="primary" type="button" ${saveDisabled ? "disabled" : ""}>Save Focus</button>
+        </div>
+      </div>
+
+      <div class="review-form-grid">
+        <label>
+          Title / Round / Week Label
+          <input id="weekly-focus-title" type="text" value="${escapeHtml(draft.title)}" placeholder="Round 5, Week of 3 May...">
+        </label>
+        <label>
+          Opponent or Context
+          <input id="weekly-focus-context" type="text" value="${escapeHtml(draft.context)}" placeholder="Opponent, bye week, training block...">
+        </label>
+        <label class="review-full-width">
+          Main Theme
+          <textarea id="weekly-focus-theme" rows="3" placeholder="The main theme for the week...">${escapeHtml(draft.mainTheme)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Key Priorities
+          <textarea id="weekly-focus-priorities" rows="3" placeholder="Top priorities for the week...">${escapeHtml(draft.keyPriorities)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Carry-Forward Issue From Last Game
+          <textarea id="weekly-focus-carry-forward" rows="3" placeholder="What needs to carry forward from the last game?">${escapeHtml(draft.carryForwardIssue)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Game Day Message Theme
+          <textarea id="weekly-focus-message-theme" rows="3" placeholder="Tone or message for game day...">${escapeHtml(draft.gameDayMessageTheme)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Notes
+          <textarea id="weekly-focus-notes" rows="4" placeholder="Anything else to remember...">${escapeHtml(draft.notes)}</textarea>
+        </label>
+      </div>
+    </article>
+
+    <article class="feedback-panel weekly-focus-list-panel">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>Saved Weekly Focus</h3>
+        </div>
+      </div>
+      <div class="review-list">
+        ${focusListMarkup}
+      </div>
+    </article>
+  `;
+
+  bindWeeklyFocusEvents();
+}
+
+function bindWeeklyFocusEvents() {
+  const content = elements.weeklyFocusContent;
+  if (!content) {
+    return;
+  }
+
+  const newFocusBtn = content.querySelector("#new-weekly-focus-btn");
+  if (newFocusBtn) {
+    newFocusBtn.addEventListener("click", startNewWeeklyFocus);
+  }
+
+  const saveFocusBtn = content.querySelector("#save-weekly-focus-btn");
+  if (saveFocusBtn) {
+    saveFocusBtn.addEventListener("click", saveWeeklyFocusDraft);
+  }
+
+  const fieldMap = [
+    ["#weekly-focus-title", "title"],
+    ["#weekly-focus-context", "context"],
+    ["#weekly-focus-theme", "mainTheme"],
+    ["#weekly-focus-priorities", "keyPriorities"],
+    ["#weekly-focus-carry-forward", "carryForwardIssue"],
+    ["#weekly-focus-message-theme", "gameDayMessageTheme"],
+    ["#weekly-focus-notes", "notes"],
+  ];
+
+  fieldMap.forEach(([selector, field]) => {
+    const input = content.querySelector(selector);
+    if (!input) {
+      return;
+    }
+
+    input.addEventListener("input", () => {
+      state.weeklyFocus.draft[field] = input.value;
+      saveState();
+      syncWeeklyFocusActionState();
+    });
+  });
+
+  content.querySelectorAll("[data-weekly-focus-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      loadWeeklyFocusIntoDraft(button.dataset.weeklyFocusId);
+    });
+  });
+
+  syncWeeklyFocusActionState();
+}
+
+function syncWeeklyFocusActionState() {
+  const saveFocusBtn = elements.weeklyFocusContent?.querySelector("#save-weekly-focus-btn");
+  if (!saveFocusBtn) {
+    return;
+  }
+
+  saveFocusBtn.disabled = !state.weeklyFocus.selectedFocusId && isWeeklyFocusDraftEmpty(state.weeklyFocus.draft);
+}
+
+function startNewWeeklyFocus() {
+  if (isWeeklyFocusDraftDirty()) {
+    const confirmed = window.confirm("Discard the current weekly focus draft and start a new one?");
+    if (!confirmed) {
+      return;
+    }
+  }
+
+  state.weeklyFocus.selectedFocusId = null;
+  state.weeklyFocus.draft = createEmptyWeeklyFocusDraft();
+  saveState();
+  renderWeeklyFocus();
+}
+
+function saveWeeklyFocusDraft() {
+  const draft = normalizeWeeklyFocusDraft(state.weeklyFocus.draft);
+  const hasDraftContent = !isWeeklyFocusDraftEmpty(draft);
+  const selectedFocus = getSelectedWeeklyFocus();
+
+  if (!hasDraftContent && !selectedFocus) {
+    return;
+  }
+
+  const now = new Date().toISOString();
+
+  if (selectedFocus) {
+    Object.assign(selectedFocus, draft, {
+      updatedAt: now,
+      createdAt: selectedFocus.createdAt || now,
+    });
+  } else {
+    const focus = {
+      id: createId(),
+      ...draft,
+      createdAt: now,
+      updatedAt: now,
+    };
+    state.weeklyFocus.items.push(focus);
+    state.weeklyFocus.selectedFocusId = focus.id;
+  }
+
+  const savedFocus = getSelectedWeeklyFocus();
+  if (savedFocus) {
+    state.weeklyFocus.draft = cloneWeeklyFocusDraft(savedFocus);
+  }
+
+  saveState();
+  renderWeeklyFocus();
+}
+
+function loadWeeklyFocusIntoDraft(focusId) {
+  const focus = state.weeklyFocus.items.find((entry) => entry.id === focusId);
+  if (!focus) {
+    return;
+  }
+
+  if (isWeeklyFocusDraftDirty() && state.weeklyFocus.selectedFocusId !== focusId) {
+    const confirmed = window.confirm("Discard the current weekly focus draft and open another entry?");
+    if (!confirmed) {
+      return;
+    }
+  }
+
+  state.weeklyFocus.selectedFocusId = focus.id;
+  state.weeklyFocus.draft = cloneWeeklyFocusDraft(focus);
+  saveState();
+  renderWeeklyFocus();
+}
+
+function getSelectedWeeklyFocus() {
+  if (!state.weeklyFocus.selectedFocusId) {
+    return null;
+  }
+
+  return state.weeklyFocus.items.find((entry) => entry.id === state.weeklyFocus.selectedFocusId) || null;
+}
+
+function cloneWeeklyFocusDraft(focus) {
+  const normalized = normalizeWeeklyFocusDraft(focus);
+  return { ...normalized };
+}
+
+function createEmptyWeeklyFocusDraft() {
+  return {
+    title: "",
+    context: "",
+    mainTheme: "",
+    keyPriorities: "",
+    carryForwardIssue: "",
+    gameDayMessageTheme: "",
+    notes: "",
+  };
+}
+
+function normalizeWeeklyFocusDraft(focus) {
+  const source = focus && typeof focus === "object" ? focus : {};
+  const blank = createEmptyWeeklyFocusDraft();
+
+  return {
+    title: `${source.title ?? blank.title}`,
+    context: `${source.context ?? blank.context}`,
+    mainTheme: `${source.mainTheme ?? blank.mainTheme}`,
+    keyPriorities: `${source.keyPriorities ?? blank.keyPriorities}`,
+    carryForwardIssue: `${source.carryForwardIssue ?? blank.carryForwardIssue}`,
+    gameDayMessageTheme: `${source.gameDayMessageTheme ?? blank.gameDayMessageTheme}`,
+    notes: `${source.notes ?? blank.notes}`,
+  };
+}
+
+function normalizeWeeklyFocusItem(focus) {
+  const source = focus && typeof focus === "object" ? focus : {};
+  const draft = normalizeWeeklyFocusDraft(source);
+
+  return {
+    id: `${source.id || createId()}`,
+    ...draft,
+    createdAt: source.createdAt || source.updatedAt || new Date().toISOString(),
+    updatedAt: source.updatedAt || source.createdAt || new Date().toISOString(),
+  };
+}
+
+function isWeeklyFocusDraftEmpty(draft) {
+  const normalized = normalizeWeeklyFocusDraft(draft);
+  return Object.values(normalized).every((value) => `${value}`.trim() === "");
+}
+
+function isWeeklyFocusDraftDirty() {
+  const selectedFocus = getSelectedWeeklyFocus();
+  if (!selectedFocus) {
+    return !isWeeklyFocusDraftEmpty(state.weeklyFocus.draft);
+  }
+
+  return !areWeeklyFocusEntriesEqual(selectedFocus, state.weeklyFocus.draft);
+}
+
+function areWeeklyFocusEntriesEqual(left, right) {
+  const leftDraft = normalizeWeeklyFocusDraft(left);
+  const rightDraft = normalizeWeeklyFocusDraft(right);
+
+  return Object.keys(leftDraft).every((key) => `${leftDraft[key]}` === `${rightDraft[key]}`);
+}
+
+function getWeeklyFocusLabel(focus) {
+  const title = `${focus?.title || ""}`.trim();
+  if (title) {
+    return title;
+  }
+
+  const context = `${focus?.context || ""}`.trim();
+  return context || "Untitled Focus";
+}
+
+function formatWeeklyFocusDate(value) {
+  if (!value) {
+    return "Just saved";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Just saved";
+  }
+
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function bindFeedbackTrackerEvents() {
   elements.feedbackTracker.querySelectorAll("[data-feedback-quarter]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -2775,6 +3100,7 @@ function saveState() {
     notepad: state.notepad,
     gameReviews: state.gameReviews,
     trainingPlans: state.trainingPlans,
+    weeklyFocus: state.weeklyFocus,
   });
   window.localStorage.setItem(STORAGE_KEY, payload);
 }
@@ -2874,6 +3200,42 @@ function loadState() {
       selectedPlanId,
       draft: trainingDraft,
       items: trainingItems,
+    };
+
+    const loadedWeeklyFocus = Array.isArray(parsedState.weeklyFocus)
+      ? { items: parsedState.weeklyFocus }
+      : (parsedState.weeklyFocus && typeof parsedState.weeklyFocus === "object"
+        ? parsedState.weeklyFocus
+        : {});
+    const focusItems = Array.isArray(loadedWeeklyFocus.items)
+      ? loadedWeeklyFocus.items.map((focus) => normalizeWeeklyFocusItem(focus))
+      : [];
+    let selectedFocusId = loadedWeeklyFocus.selectedFocusId || null;
+    let focusDraft = normalizeWeeklyFocusDraft(loadedWeeklyFocus.draft);
+
+    if (selectedFocusId && !focusItems.some((focus) => focus.id === selectedFocusId)) {
+      selectedFocusId = null;
+    }
+
+    if (!selectedFocusId && focusItems.length) {
+      const latestFocus = focusItems[focusItems.length - 1];
+      selectedFocusId = latestFocus.id;
+      if (isWeeklyFocusDraftEmpty(focusDraft)) {
+        focusDraft = cloneWeeklyFocusDraft(latestFocus);
+      }
+    }
+
+    if (selectedFocusId && isWeeklyFocusDraftEmpty(focusDraft)) {
+      const selectedFocus = focusItems.find((focus) => focus.id === selectedFocusId);
+      if (selectedFocus) {
+        focusDraft = cloneWeeklyFocusDraft(selectedFocus);
+      }
+    }
+
+    state.weeklyFocus = {
+      selectedFocusId,
+      draft: focusDraft,
+      items: focusItems,
     };
   } catch (error) {
     console.error("Could not load saved app data.", error);

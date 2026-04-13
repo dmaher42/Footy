@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.13.2";
+const APP_VERSION = "2026.04.13.3";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -87,6 +87,11 @@ const state = {
     byQuarter: {},
     reflection: "",
   },
+  gameReviews: {
+    selectedReviewId: null,
+    draft: createEmptyGameReviewDraft(),
+    items: [],
+  },
 };
 
 const elements = {
@@ -101,6 +106,7 @@ const elements = {
   gameViewButtons: document.querySelectorAll("[data-game-view]"),
   rotationSection: document.querySelector("#rotation-section"),
   feedbackSection: document.querySelector("#feedback-section"),
+  gameReviewsSection: document.querySelector("#game-reviews-section"),
   notepadSection: document.querySelector("#notepad-section"),
   reportSection: document.querySelector("#report-section"),
   periodLabel: document.querySelector("#period-label"),
@@ -118,6 +124,7 @@ const elements = {
   setupBackdrop: document.querySelector("#setup-backdrop"),
   setupPanel: document.querySelector("#setup-panel"),
   copyFeedbackBtn: document.querySelector("#copy-feedback-btn"),
+  gameReviewsContent: document.querySelector("#game-reviews-content"),
   toggleFullReportBtn: document.querySelector("#toggle-full-report-btn"),
   copyReportBtn: document.querySelector("#copy-report-btn"),
   feedbackTracker: document.querySelector("#feedback-tracker"),
@@ -520,6 +527,7 @@ function render() {
     currentRotationPlan = null;
   }
   renderFeedbackTracker();
+  renderGameReviews();
   renderNotepad();
   renderPostGameReport();
 }
@@ -959,6 +967,7 @@ function refreshPlanAndRender() {
     currentRotationPlan = null;
   }
   renderFeedbackTracker();
+  renderGameReviews();
   renderPostGameReport();
 }
 
@@ -986,8 +995,8 @@ function syncSetupPanel() {
 
 function syncGameView() {
   const viewMap = {
-    rotation: elements.rotationSection,
     feedback: elements.feedbackSection,
+    gameReviews: elements.gameReviewsSection,
     notepad: elements.notepadSection,
     report: elements.reportSection,
   };
@@ -1218,6 +1227,330 @@ function copyReflectionNote() {
 
   navigator.clipboard.writeText(reflectionText).catch((error) => {
     console.error("Could not copy reflection.", error);
+  });
+}
+
+function renderGameReviews() {
+  const content = elements.gameReviewsContent;
+  if (!content) {
+    return;
+  }
+
+  state.gameReviews.draft = normalizeGameReviewDraft(state.gameReviews.draft);
+  const activeReview = getSelectedGameReview();
+  const draft = activeReview
+    ? cloneGameReviewDraft(state.gameReviews.draft)
+    : state.gameReviews.draft;
+  const reviewTitle = activeReview
+    ? `Editing ${getGameReviewLabel(activeReview)}`
+    : "New Game Review";
+  const reviewHelper = activeReview
+    ? `Last saved ${formatGameReviewDate(activeReview.updatedAt)}.`
+    : "Capture the main themes from the game and save them here.";
+  const saveDisabled = !activeReview && isGameReviewDraftEmpty(draft);
+  const savedReviews = [...state.gameReviews.items].reverse();
+
+  const reviewListMarkup = savedReviews.length
+    ? savedReviews.map((review) => `
+      <button class="review-list-item ${review.id === state.gameReviews.selectedReviewId ? "active" : ""}" type="button" data-game-review-id="${review.id}">
+        <span class="review-list-title">${escapeHtml(getGameReviewLabel(review))}</span>
+        <span class="review-list-meta">${escapeHtml(review.result || "No result recorded")} · ${escapeHtml(formatGameReviewDate(review.updatedAt))}</span>
+      </button>
+    `).join("")
+    : '<p class="placeholder">No game reviews saved yet.</p>';
+
+  content.innerHTML = `
+    <article class="feedback-panel game-review-editor">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>${escapeHtml(reviewTitle)}</h3>
+          <p class="helper">${escapeHtml(reviewHelper)}</p>
+        </div>
+        <div class="inline-actions compact-actions">
+          <button id="new-game-review-btn" type="button">New Review</button>
+          <button id="save-game-review-btn" class="primary" type="button" ${saveDisabled ? "disabled" : ""}>Save Review</button>
+        </div>
+      </div>
+
+      <div class="review-form-grid">
+        <label>
+          Opponent
+          <input id="game-review-opponent" type="text" value="${escapeHtml(draft.opponent)}" placeholder="Opponent">
+        </label>
+        <label>
+          Result
+          <input id="game-review-result" type="text" value="${escapeHtml(draft.result)}" placeholder="Win, loss, draw...">
+        </label>
+        <label class="review-full-width">
+          What Worked
+          <textarea id="game-review-what-worked" rows="3" placeholder="What went well?">${escapeHtml(draft.whatWorked)}</textarea>
+        </label>
+        <label class="review-full-width">
+          What Broke Down
+          <textarea id="game-review-what-broke-down" rows="3" placeholder="What needs work?">${escapeHtml(draft.whatBrokeDown)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Contest / Tackling / Ground Balls
+          <textarea id="game-review-contest" rows="3" placeholder="Contest notes...">${escapeHtml(draft.contestTacklingGroundBalls)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Leading / Forward Spacing
+          <textarea id="game-review-leading" rows="3" placeholder="Leading and spacing notes...">${escapeHtml(draft.leadingForwardSpacing)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Ball Movement
+          <textarea id="game-review-ball-movement" rows="3" placeholder="Ball movement notes...">${escapeHtml(draft.ballMovement)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Effort / Intent
+          <textarea id="game-review-effort" rows="3" placeholder="Effort and intent notes...">${escapeHtml(draft.effortIntent)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Next Training Priorities
+          <textarea id="game-review-priorities" rows="4" placeholder="Training priorities to carry forward...">${escapeHtml(draft.nextTrainingPriorities)}</textarea>
+        </label>
+      </div>
+    </article>
+
+    <article class="feedback-panel game-review-list-panel">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>Saved Reviews</h3>
+        </div>
+      </div>
+      <div class="review-list">
+        ${reviewListMarkup}
+      </div>
+    </article>
+  `;
+
+  bindGameReviewsEvents();
+}
+
+function bindGameReviewsEvents() {
+  const content = elements.gameReviewsContent;
+  if (!content) {
+    return;
+  }
+
+  const newReviewBtn = content.querySelector("#new-game-review-btn");
+  if (newReviewBtn) {
+    newReviewBtn.addEventListener("click", startNewGameReview);
+  }
+
+  const saveReviewBtn = content.querySelector("#save-game-review-btn");
+  if (saveReviewBtn) {
+    saveReviewBtn.addEventListener("click", saveGameReviewDraft);
+  }
+
+  const fieldMap = [
+    ["#game-review-opponent", "opponent"],
+    ["#game-review-result", "result"],
+    ["#game-review-what-worked", "whatWorked"],
+    ["#game-review-what-broke-down", "whatBrokeDown"],
+    ["#game-review-contest", "contestTacklingGroundBalls"],
+    ["#game-review-leading", "leadingForwardSpacing"],
+    ["#game-review-ball-movement", "ballMovement"],
+    ["#game-review-effort", "effortIntent"],
+    ["#game-review-priorities", "nextTrainingPriorities"],
+  ];
+
+  fieldMap.forEach(([selector, field]) => {
+    const input = content.querySelector(selector);
+    if (!input) {
+      return;
+    }
+
+    input.addEventListener("input", () => {
+      state.gameReviews.draft[field] = input.value;
+      saveState();
+      syncGameReviewActionState();
+    });
+  });
+
+  content.querySelectorAll("[data-game-review-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      loadGameReviewIntoDraft(button.dataset.gameReviewId);
+    });
+  });
+
+  syncGameReviewActionState();
+}
+
+function syncGameReviewActionState() {
+  const saveReviewBtn = elements.gameReviewsContent?.querySelector("#save-game-review-btn");
+  if (!saveReviewBtn) {
+    return;
+  }
+
+  saveReviewBtn.disabled = !state.gameReviews.selectedReviewId && isGameReviewDraftEmpty(state.gameReviews.draft);
+}
+
+function startNewGameReview() {
+  if (isGameReviewDraftDirty()) {
+    const confirmed = window.confirm("Discard the current review draft and start a new one?");
+    if (!confirmed) {
+      return;
+    }
+  }
+
+  state.gameReviews.selectedReviewId = null;
+  state.gameReviews.draft = createEmptyGameReviewDraft();
+  saveState();
+  renderGameReviews();
+}
+
+function saveGameReviewDraft() {
+  const draft = normalizeGameReviewDraft(state.gameReviews.draft);
+  const hasDraftContent = !isGameReviewDraftEmpty(draft);
+  const selectedReview = getSelectedGameReview();
+
+  if (!hasDraftContent && !selectedReview) {
+    return;
+  }
+
+  const now = new Date().toISOString();
+
+  if (selectedReview) {
+    Object.assign(selectedReview, draft, {
+      updatedAt: now,
+      createdAt: selectedReview.createdAt || now,
+    });
+  } else {
+    const review = {
+      id: createId(),
+      ...draft,
+      createdAt: now,
+      updatedAt: now,
+    };
+    state.gameReviews.items.push(review);
+    state.gameReviews.selectedReviewId = review.id;
+  }
+
+  const savedReview = getSelectedGameReview();
+  if (savedReview) {
+    state.gameReviews.draft = cloneGameReviewDraft(savedReview);
+  }
+
+  saveState();
+  renderGameReviews();
+}
+
+function loadGameReviewIntoDraft(reviewId) {
+  const review = state.gameReviews.items.find((entry) => entry.id === reviewId);
+  if (!review) {
+    return;
+  }
+
+  if (isGameReviewDraftDirty() && state.gameReviews.selectedReviewId !== reviewId) {
+    const confirmed = window.confirm("Discard the current review draft and open another review?");
+    if (!confirmed) {
+      return;
+    }
+  }
+
+  state.gameReviews.selectedReviewId = review.id;
+  state.gameReviews.draft = cloneGameReviewDraft(review);
+  saveState();
+  renderGameReviews();
+}
+
+function getSelectedGameReview() {
+  if (!state.gameReviews.selectedReviewId) {
+    return null;
+  }
+
+  return state.gameReviews.items.find((review) => review.id === state.gameReviews.selectedReviewId) || null;
+}
+
+function cloneGameReviewDraft(review) {
+  const normalized = normalizeGameReviewDraft(review);
+  return { ...normalized };
+}
+
+function createEmptyGameReviewDraft() {
+  return {
+    opponent: "",
+    result: "",
+    whatWorked: "",
+    whatBrokeDown: "",
+    contestTacklingGroundBalls: "",
+    leadingForwardSpacing: "",
+    ballMovement: "",
+    effortIntent: "",
+    nextTrainingPriorities: "",
+  };
+}
+
+function normalizeGameReviewDraft(review) {
+  const source = review && typeof review === "object" ? review : {};
+  const blank = createEmptyGameReviewDraft();
+
+  return {
+    opponent: `${source.opponent ?? blank.opponent}`,
+    result: `${source.result ?? blank.result}`,
+    whatWorked: `${source.whatWorked ?? blank.whatWorked}`,
+    whatBrokeDown: `${source.whatBrokeDown ?? blank.whatBrokeDown}`,
+    contestTacklingGroundBalls: `${source.contestTacklingGroundBalls ?? blank.contestTacklingGroundBalls}`,
+    leadingForwardSpacing: `${source.leadingForwardSpacing ?? blank.leadingForwardSpacing}`,
+    ballMovement: `${source.ballMovement ?? blank.ballMovement}`,
+    effortIntent: `${source.effortIntent ?? blank.effortIntent}`,
+    nextTrainingPriorities: `${source.nextTrainingPriorities ?? blank.nextTrainingPriorities}`,
+  };
+}
+
+function normalizeGameReviewItem(review) {
+  const source = review && typeof review === "object" ? review : {};
+  const draft = normalizeGameReviewDraft(source);
+
+  return {
+    id: `${source.id || createId()}`,
+    ...draft,
+    createdAt: source.createdAt || source.updatedAt || new Date().toISOString(),
+    updatedAt: source.updatedAt || source.createdAt || new Date().toISOString(),
+  };
+}
+
+function isGameReviewDraftEmpty(draft) {
+  const normalized = normalizeGameReviewDraft(draft);
+  return Object.values(normalized).every((value) => `${value}`.trim() === "");
+}
+
+function isGameReviewDraftDirty() {
+  const selectedReview = getSelectedGameReview();
+  if (!selectedReview) {
+    return !isGameReviewDraftEmpty(state.gameReviews.draft);
+  }
+
+  return !areGameReviewEntriesEqual(selectedReview, state.gameReviews.draft);
+}
+
+function areGameReviewEntriesEqual(left, right) {
+  const leftDraft = normalizeGameReviewDraft(left);
+  const rightDraft = normalizeGameReviewDraft(right);
+
+  return Object.keys(leftDraft).every((key) => `${leftDraft[key]}` === `${rightDraft[key]}`);
+}
+
+function getGameReviewLabel(review) {
+  const opponent = `${review?.opponent || ""}`.trim();
+  return opponent || "Untitled Review";
+}
+
+function formatGameReviewDate(value) {
+  if (!value) {
+    return "Just saved";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Just saved";
+  }
+
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 }
 
@@ -2087,6 +2420,7 @@ function saveState() {
     settings: state.settings,
     feedback: state.feedback,
     notepad: state.notepad,
+    gameReviews: state.gameReviews,
   });
   window.localStorage.setItem(STORAGE_KEY, payload);
 }
@@ -2115,6 +2449,41 @@ function loadState() {
       currentQuarter: parsedState.feedback?.currentQuarter || parsedState.notepad?.currentQuarter || 1,
       byQuarter: parsedState.notepad?.byQuarter || {},
       reflection: parsedState.notepad?.reflection || "",
+    };
+    const loadedGameReviews = Array.isArray(parsedState.gameReviews)
+      ? { items: parsedState.gameReviews }
+      : (parsedState.gameReviews && typeof parsedState.gameReviews === "object"
+        ? parsedState.gameReviews
+        : {});
+    const items = Array.isArray(loadedGameReviews.items)
+      ? loadedGameReviews.items.map((review) => normalizeGameReviewItem(review))
+      : [];
+    let selectedReviewId = loadedGameReviews.selectedReviewId || null;
+    let draft = normalizeGameReviewDraft(loadedGameReviews.draft);
+
+    if (selectedReviewId && !items.some((review) => review.id === selectedReviewId)) {
+      selectedReviewId = null;
+    }
+
+    if (!selectedReviewId && items.length) {
+      const latestReview = items[items.length - 1];
+      selectedReviewId = latestReview.id;
+      if (isGameReviewDraftEmpty(draft)) {
+        draft = cloneGameReviewDraft(latestReview);
+      }
+    }
+
+    if (selectedReviewId && isGameReviewDraftEmpty(draft)) {
+      const selectedReview = items.find((review) => review.id === selectedReviewId);
+      if (selectedReview) {
+        draft = cloneGameReviewDraft(selectedReview);
+      }
+    }
+
+    state.gameReviews = {
+      selectedReviewId,
+      draft,
+      items,
     };
   } catch (error) {
     console.error("Could not load saved app data.", error);

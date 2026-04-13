@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.13.1";
+const APP_VERSION = "2026.04.13.2";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -514,7 +514,11 @@ function render() {
   syncBenchRulesVisibility();
   syncSelectedFeedbackPlayer();
   renderPlayerTable();
-  renderRotation();
+  if (activeGameView === "rotation") {
+    renderRotation();
+  } else {
+    currentRotationPlan = null;
+  }
   renderFeedbackTracker();
   renderNotepad();
   renderPostGameReport();
@@ -948,8 +952,12 @@ function buildRotationPlan() {
 }
 
 function refreshPlanAndRender() {
-  currentRotationPlan = buildRotationPlan();
-  renderRotation();
+  if (activeGameView === "rotation") {
+    currentRotationPlan = buildRotationPlan();
+    renderRotation();
+  } else {
+    currentRotationPlan = null;
+  }
   renderFeedbackTracker();
   renderPostGameReport();
 }

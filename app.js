@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.13.7";
+const APP_VERSION = "2026.04.13.8";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -1887,6 +1887,63 @@ function normalizeTrainingPlanItem(plan) {
     createdAt: source.createdAt || source.updatedAt || new Date().toISOString(),
     updatedAt: source.updatedAt || source.createdAt || new Date().toISOString(),
   };
+}
+
+function createSeedTrainingPlanItem() {
+  return normalizeTrainingPlanItem({
+    title: "Contest First, Then Structure",
+    date: "Planned",
+    sessionPurpose: "Contest first, then structure",
+    expectedNumbers: "U14 Nairne",
+    duration: "60 minutes",
+    warmUp: [
+      "5:00-5:08 Competitive warm-up",
+      "Ground balls, body pressure, run to receive",
+    ].join("\n"),
+    fundamentals: [
+      "5:08-5:20 Contest block 1",
+      "Outnumber at contest, pair off, relevant/irrelevant",
+      "5:20-5:32 Contest block 2",
+      "Tackling, lock ball in, forward-half pressure",
+    ].join("\n"),
+    mainDrills: [
+      "5:32-5:42 Structure block 1",
+      "Forward leading patterns, spacing, paired leads",
+      "5:42-5:50 Structure block 2",
+      "Kick-ins, face forward immediately, exit shape",
+    ].join("\n"),
+    gamePlayConditionedGame: [
+      "5:50-5:58 Conditioned game",
+      "Contest to structure transfer",
+    ].join("\n"),
+    coachingCues: [
+      "One to win it, one to protect, one to receive",
+      "Pair off",
+      "Tackle and lock it in",
+      "One hard lead, one holds or delays",
+      "Face forward immediately",
+    ].join("\n"),
+    notesReviewNextTime: [
+      "Notebook: Training Planning",
+      "Team: U14 Nairne",
+      "Status: planned",
+      "Focus areas: tackling, ground balls, leading patterns, kick-ins",
+      "Linked review issues: damaging opposition mids, loose defence, outnumbered at contests, lack of forward structure, players getting lost/confused",
+    ].join("\n"),
+  });
+}
+
+function seedTrainingPlanIfMissing() {
+  const seedTitle = "Contest First, Then Structure";
+  if (state.trainingPlans.items.some((plan) => `${plan.title || ""}`.trim() === seedTitle)) {
+    return false;
+  }
+
+  const seedPlan = createSeedTrainingPlanItem();
+  state.trainingPlans.items.push(seedPlan);
+  state.trainingPlans.selectedPlanId = seedPlan.id;
+  state.trainingPlans.draft = cloneTrainingPlanDraft(seedPlan);
+  return true;
 }
 
 function isTrainingPlanDraftEmpty(draft) {
@@ -4077,6 +4134,10 @@ function loadState() {
       draft: playerNoteDraft,
       items: noteItems,
     };
+
+    if (seedTrainingPlanIfMissing()) {
+      saveState();
+    }
   } catch (error) {
     console.error("Could not load saved app data.", error);
   }

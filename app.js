@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.13.5";
+const APP_VERSION = "2026.04.13.6";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -102,6 +102,11 @@ const state = {
     draft: createEmptyWeeklyFocusDraft(),
     items: [],
   },
+  seasonHub: {
+    selectedHubId: null,
+    draft: createEmptySeasonHubDraft(),
+    items: [],
+  },
 };
 
 const elements = {
@@ -119,6 +124,7 @@ const elements = {
   gameReviewsSection: document.querySelector("#game-reviews-section"),
   trainingPlansSection: document.querySelector("#training-plans-section"),
   weeklyFocusSection: document.querySelector("#weekly-focus-section"),
+  seasonHubSection: document.querySelector("#season-hub-section"),
   notepadSection: document.querySelector("#notepad-section"),
   reportSection: document.querySelector("#report-section"),
   periodLabel: document.querySelector("#period-label"),
@@ -139,6 +145,7 @@ const elements = {
   gameReviewsContent: document.querySelector("#game-reviews-content"),
   trainingPlansContent: document.querySelector("#training-plans-content"),
   weeklyFocusContent: document.querySelector("#weekly-focus-content"),
+  seasonHubContent: document.querySelector("#season-hub-content"),
   toggleFullReportBtn: document.querySelector("#toggle-full-report-btn"),
   copyReportBtn: document.querySelector("#copy-report-btn"),
   feedbackTracker: document.querySelector("#feedback-tracker"),
@@ -544,6 +551,7 @@ function render() {
   renderGameReviews();
   renderTrainingPlans();
   renderWeeklyFocus();
+  renderSeasonHub();
   renderNotepad();
   renderPostGameReport();
 }
@@ -986,6 +994,7 @@ function refreshPlanAndRender() {
   renderGameReviews();
   renderTrainingPlans();
   renderWeeklyFocus();
+  renderSeasonHub();
   renderPostGameReport();
 }
 
@@ -1017,6 +1026,7 @@ function syncGameView() {
     gameReviews: elements.gameReviewsSection,
     trainingPlans: elements.trainingPlansSection,
     weeklyFocus: elements.weeklyFocusSection,
+    seasonHub: elements.seasonHubSection,
     notepad: elements.notepadSection,
     report: elements.reportSection,
   };
@@ -2232,6 +2242,356 @@ function formatWeeklyFocusDate(value) {
   });
 }
 
+function renderSeasonHub() {
+  const content = elements.seasonHubContent;
+  if (!content) {
+    return;
+  }
+
+  state.seasonHub.draft = normalizeSeasonHubDraft(state.seasonHub.draft);
+  const activeHub = getSelectedSeasonHub();
+  const draft = activeHub
+    ? cloneSeasonHubDraft(state.seasonHub.draft)
+    : state.seasonHub.draft;
+  const hubTitle = activeHub
+    ? `Editing ${getSeasonHubLabel(activeHub)}`
+    : "New Season Hub";
+  const hubHelper = activeHub
+    ? `Last saved ${formatSeasonHubDate(activeHub.updatedAt)}.`
+    : "Capture the current season snapshot here.";
+  const saveDisabled = !activeHub && isSeasonHubDraftEmpty(draft);
+  const savedHubs = [...state.seasonHub.items].reverse();
+
+  const hubListMarkup = savedHubs.length
+    ? savedHubs.map((hub) => `
+      <button class="review-list-item ${hub.id === state.seasonHub.selectedHubId ? "active" : ""}" type="button" data-season-hub-id="${hub.id}">
+        <span class="review-list-title">${escapeHtml(getSeasonHubLabel(hub))}</span>
+        <span class="review-list-meta">${escapeHtml(hub.team || "No team recorded")} · ${escapeHtml(formatSeasonHubDate(hub.updatedAt))}</span>
+      </button>
+    `).join("")
+    : '<p class="placeholder">No season hub entries saved yet.</p>';
+
+  content.innerHTML = `
+    <article class="feedback-panel season-hub-editor">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>${escapeHtml(hubTitle)}</h3>
+          <p class="helper">${escapeHtml(hubHelper)}</p>
+        </div>
+        <div class="inline-actions compact-actions">
+          <button id="new-season-hub-btn" type="button">New Snapshot</button>
+          <button id="save-season-hub-btn" class="primary" type="button" ${saveDisabled ? "disabled" : ""}>Save Snapshot</button>
+        </div>
+      </div>
+
+      <div class="review-form-grid">
+        <label>
+          Team
+          <input id="season-hub-team" type="text" value="${escapeHtml(draft.team)}" placeholder="Team name">
+        </label>
+        <label>
+          Season Year
+          <input id="season-hub-year" type="text" value="${escapeHtml(draft.seasonYear)}" placeholder="2026">
+        </label>
+        <label>
+          Competition
+          <input id="season-hub-competition" type="text" value="${escapeHtml(draft.competition)}" placeholder="League or competition">
+        </label>
+        <label>
+          Coaching Role
+          <input id="season-hub-role" type="text" value="${escapeHtml(draft.coachingRole)}" placeholder="Head coach, assistant, etc.">
+        </label>
+        <label class="review-full-width">
+          Team Values
+          <textarea id="season-hub-values" rows="3" placeholder="Core team values...">${escapeHtml(draft.teamValues)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Non-Negotiables
+          <textarea id="season-hub-non-negotiables" rows="3" placeholder="Standards we must keep...">${escapeHtml(draft.nonNegotiables)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Current Game Plan Language
+          <textarea id="season-hub-game-plan-language" rows="3" placeholder="How we currently talk about our game plan...">${escapeHtml(draft.currentGamePlanLanguage)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Current Weekly Focus
+          <textarea id="season-hub-weekly-focus" rows="3" placeholder="Current weekly focus...">${escapeHtml(draft.currentWeeklyFocus)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Latest Training Priorities
+          <textarea id="season-hub-training-priorities" rows="3" placeholder="Latest training priorities...">${escapeHtml(draft.latestTrainingPriorities)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Latest Game Review Summary
+          <textarea id="season-hub-game-review-summary" rows="3" placeholder="Short summary of the latest review...">${escapeHtml(draft.latestGameReviewSummary)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Important Decisions
+          <textarea id="season-hub-decisions" rows="3" placeholder="Key season decisions...">${escapeHtml(draft.importantDecisions)}</textarea>
+        </label>
+        <label class="review-full-width">
+          General Season Notes
+          <textarea id="season-hub-notes" rows="4" placeholder="Anything else to remember across the season...">${escapeHtml(draft.generalSeasonNotes)}</textarea>
+        </label>
+      </div>
+    </article>
+
+    <article class="feedback-panel season-hub-list-panel">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>Saved Season Snapshot</h3>
+        </div>
+      </div>
+      <div class="review-list">
+        ${hubListMarkup}
+      </div>
+    </article>
+  `;
+
+  bindSeasonHubEvents();
+}
+
+function bindSeasonHubEvents() {
+  const content = elements.seasonHubContent;
+  if (!content) {
+    return;
+  }
+
+  const newHubBtn = content.querySelector("#new-season-hub-btn");
+  if (newHubBtn) {
+    newHubBtn.addEventListener("click", startNewSeasonHub);
+  }
+
+  const saveHubBtn = content.querySelector("#save-season-hub-btn");
+  if (saveHubBtn) {
+    saveHubBtn.addEventListener("click", saveSeasonHubDraft);
+  }
+
+  const fieldMap = [
+    ["#season-hub-team", "team"],
+    ["#season-hub-year", "seasonYear"],
+    ["#season-hub-competition", "competition"],
+    ["#season-hub-role", "coachingRole"],
+    ["#season-hub-values", "teamValues"],
+    ["#season-hub-non-negotiables", "nonNegotiables"],
+    ["#season-hub-game-plan-language", "currentGamePlanLanguage"],
+    ["#season-hub-weekly-focus", "currentWeeklyFocus"],
+    ["#season-hub-training-priorities", "latestTrainingPriorities"],
+    ["#season-hub-game-review-summary", "latestGameReviewSummary"],
+    ["#season-hub-decisions", "importantDecisions"],
+    ["#season-hub-notes", "generalSeasonNotes"],
+  ];
+
+  fieldMap.forEach(([selector, field]) => {
+    const input = content.querySelector(selector);
+    if (!input) {
+      return;
+    }
+
+    input.addEventListener("input", () => {
+      state.seasonHub.draft[field] = input.value;
+      saveState();
+      syncSeasonHubActionState();
+    });
+  });
+
+  content.querySelectorAll("[data-season-hub-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      loadSeasonHubIntoDraft(button.dataset.seasonHubId);
+    });
+  });
+
+  syncSeasonHubActionState();
+}
+
+function syncSeasonHubActionState() {
+  const saveHubBtn = elements.seasonHubContent?.querySelector("#save-season-hub-btn");
+  if (!saveHubBtn) {
+    return;
+  }
+
+  saveHubBtn.disabled = !state.seasonHub.selectedHubId && isSeasonHubDraftEmpty(state.seasonHub.draft);
+}
+
+function startNewSeasonHub() {
+  if (isSeasonHubDraftDirty()) {
+    const confirmed = window.confirm("Discard the current season hub draft and start a new one?");
+    if (!confirmed) {
+      return;
+    }
+  }
+
+  state.seasonHub.selectedHubId = null;
+  state.seasonHub.draft = createEmptySeasonHubDraft();
+  saveState();
+  renderSeasonHub();
+}
+
+function saveSeasonHubDraft() {
+  const draft = normalizeSeasonHubDraft(state.seasonHub.draft);
+  const hasDraftContent = !isSeasonHubDraftEmpty(draft);
+  const selectedHub = getSelectedSeasonHub();
+
+  if (!hasDraftContent && !selectedHub) {
+    return;
+  }
+
+  const now = new Date().toISOString();
+
+  if (selectedHub) {
+    Object.assign(selectedHub, draft, {
+      updatedAt: now,
+      createdAt: selectedHub.createdAt || now,
+    });
+  } else {
+    const hub = {
+      id: createId(),
+      ...draft,
+      createdAt: now,
+      updatedAt: now,
+    };
+    state.seasonHub.items.push(hub);
+    state.seasonHub.selectedHubId = hub.id;
+  }
+
+  const savedHub = getSelectedSeasonHub();
+  if (savedHub) {
+    state.seasonHub.draft = cloneSeasonHubDraft(savedHub);
+  }
+
+  saveState();
+  renderSeasonHub();
+}
+
+function loadSeasonHubIntoDraft(hubId) {
+  const hub = state.seasonHub.items.find((entry) => entry.id === hubId);
+  if (!hub) {
+    return;
+  }
+
+  if (isSeasonHubDraftDirty() && state.seasonHub.selectedHubId !== hubId) {
+    const confirmed = window.confirm("Discard the current season hub draft and open another snapshot?");
+    if (!confirmed) {
+      return;
+    }
+  }
+
+  state.seasonHub.selectedHubId = hub.id;
+  state.seasonHub.draft = cloneSeasonHubDraft(hub);
+  saveState();
+  renderSeasonHub();
+}
+
+function getSelectedSeasonHub() {
+  if (!state.seasonHub.selectedHubId) {
+    return null;
+  }
+
+  return state.seasonHub.items.find((hub) => hub.id === state.seasonHub.selectedHubId) || null;
+}
+
+function cloneSeasonHubDraft(hub) {
+  const normalized = normalizeSeasonHubDraft(hub);
+  return { ...normalized };
+}
+
+function createEmptySeasonHubDraft() {
+  return {
+    team: "",
+    seasonYear: "",
+    competition: "",
+    coachingRole: "",
+    teamValues: "",
+    nonNegotiables: "",
+    currentGamePlanLanguage: "",
+    currentWeeklyFocus: "",
+    latestTrainingPriorities: "",
+    latestGameReviewSummary: "",
+    importantDecisions: "",
+    generalSeasonNotes: "",
+  };
+}
+
+function normalizeSeasonHubDraft(hub) {
+  const source = hub && typeof hub === "object" ? hub : {};
+  const blank = createEmptySeasonHubDraft();
+
+  return {
+    team: `${source.team ?? blank.team}`,
+    seasonYear: `${source.seasonYear ?? blank.seasonYear}`,
+    competition: `${source.competition ?? blank.competition}`,
+    coachingRole: `${source.coachingRole ?? blank.coachingRole}`,
+    teamValues: `${source.teamValues ?? blank.teamValues}`,
+    nonNegotiables: `${source.nonNegotiables ?? blank.nonNegotiables}`,
+    currentGamePlanLanguage: `${source.currentGamePlanLanguage ?? blank.currentGamePlanLanguage}`,
+    currentWeeklyFocus: `${source.currentWeeklyFocus ?? blank.currentWeeklyFocus}`,
+    latestTrainingPriorities: `${source.latestTrainingPriorities ?? blank.latestTrainingPriorities}`,
+    latestGameReviewSummary: `${source.latestGameReviewSummary ?? blank.latestGameReviewSummary}`,
+    importantDecisions: `${source.importantDecisions ?? blank.importantDecisions}`,
+    generalSeasonNotes: `${source.generalSeasonNotes ?? blank.generalSeasonNotes}`,
+  };
+}
+
+function normalizeSeasonHubItem(hub) {
+  const source = hub && typeof hub === "object" ? hub : {};
+  const draft = normalizeSeasonHubDraft(source);
+
+  return {
+    id: `${source.id || createId()}`,
+    ...draft,
+    createdAt: source.createdAt || source.updatedAt || new Date().toISOString(),
+    updatedAt: source.updatedAt || source.createdAt || new Date().toISOString(),
+  };
+}
+
+function isSeasonHubDraftEmpty(draft) {
+  const normalized = normalizeSeasonHubDraft(draft);
+  return Object.values(normalized).every((value) => `${value}`.trim() === "");
+}
+
+function isSeasonHubDraftDirty() {
+  const selectedHub = getSelectedSeasonHub();
+  if (!selectedHub) {
+    return !isSeasonHubDraftEmpty(state.seasonHub.draft);
+  }
+
+  return !areSeasonHubEntriesEqual(selectedHub, state.seasonHub.draft);
+}
+
+function areSeasonHubEntriesEqual(left, right) {
+  const leftDraft = normalizeSeasonHubDraft(left);
+  const rightDraft = normalizeSeasonHubDraft(right);
+
+  return Object.keys(leftDraft).every((key) => `${leftDraft[key]}` === `${rightDraft[key]}`);
+}
+
+function getSeasonHubLabel(hub) {
+  const team = `${hub?.team || ""}`.trim();
+  if (team) {
+    return team;
+  }
+
+  const year = `${hub?.seasonYear || ""}`.trim();
+  return year || "Untitled Snapshot";
+}
+
+function formatSeasonHubDate(value) {
+  if (!value) {
+    return "Just saved";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Just saved";
+  }
+
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function bindFeedbackTrackerEvents() {
   elements.feedbackTracker.querySelectorAll("[data-feedback-quarter]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -3101,6 +3461,7 @@ function saveState() {
     gameReviews: state.gameReviews,
     trainingPlans: state.trainingPlans,
     weeklyFocus: state.weeklyFocus,
+    seasonHub: state.seasonHub,
   });
   window.localStorage.setItem(STORAGE_KEY, payload);
 }
@@ -3236,6 +3597,42 @@ function loadState() {
       selectedFocusId,
       draft: focusDraft,
       items: focusItems,
+    };
+
+    const loadedSeasonHub = Array.isArray(parsedState.seasonHub)
+      ? { items: parsedState.seasonHub }
+      : (parsedState.seasonHub && typeof parsedState.seasonHub === "object"
+        ? parsedState.seasonHub
+        : {});
+    const hubItems = Array.isArray(loadedSeasonHub.items)
+      ? loadedSeasonHub.items.map((hub) => normalizeSeasonHubItem(hub))
+      : [];
+    let selectedHubId = loadedSeasonHub.selectedHubId || null;
+    let hubDraft = normalizeSeasonHubDraft(loadedSeasonHub.draft);
+
+    if (selectedHubId && !hubItems.some((hub) => hub.id === selectedHubId)) {
+      selectedHubId = null;
+    }
+
+    if (!selectedHubId && hubItems.length) {
+      const latestHub = hubItems[hubItems.length - 1];
+      selectedHubId = latestHub.id;
+      if (isSeasonHubDraftEmpty(hubDraft)) {
+        hubDraft = cloneSeasonHubDraft(latestHub);
+      }
+    }
+
+    if (selectedHubId && isSeasonHubDraftEmpty(hubDraft)) {
+      const selectedHub = hubItems.find((hub) => hub.id === selectedHubId);
+      if (selectedHub) {
+        hubDraft = cloneSeasonHubDraft(selectedHub);
+      }
+    }
+
+    state.seasonHub = {
+      selectedHubId,
+      draft: hubDraft,
+      items: hubItems,
     };
   } catch (error) {
     console.error("Could not load saved app data.", error);

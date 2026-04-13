@@ -185,7 +185,9 @@ select:focus {
 .training-plan-editor,
 .training-plan-list-panel,
 .weekly-focus-editor,
-.weekly-focus-list-panel {
+.weekly-focus-list-panel,
+.season-hub-editor,
+.season-hub-list-panel {
   display: grid;
   gap: 1rem;
 }

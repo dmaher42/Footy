@@ -1,5 +1,5 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.13.6";
+const APP_VERSION = "2026.04.13.7";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -107,6 +107,11 @@ const state = {
     draft: createEmptySeasonHubDraft(),
     items: [],
   },
+  playerNotes: {
+    selectedPlayerId: null,
+    draft: createEmptyPlayerNoteDraft(),
+    items: [],
+  },
 };
 
 const elements = {
@@ -125,6 +130,7 @@ const elements = {
   trainingPlansSection: document.querySelector("#training-plans-section"),
   weeklyFocusSection: document.querySelector("#weekly-focus-section"),
   seasonHubSection: document.querySelector("#season-hub-section"),
+  playerNotesSection: document.querySelector("#player-notes-section"),
   notepadSection: document.querySelector("#notepad-section"),
   reportSection: document.querySelector("#report-section"),
   periodLabel: document.querySelector("#period-label"),
@@ -146,6 +152,7 @@ const elements = {
   trainingPlansContent: document.querySelector("#training-plans-content"),
   weeklyFocusContent: document.querySelector("#weekly-focus-content"),
   seasonHubContent: document.querySelector("#season-hub-content"),
+  playerNotesContent: document.querySelector("#player-notes-content"),
   toggleFullReportBtn: document.querySelector("#toggle-full-report-btn"),
   copyReportBtn: document.querySelector("#copy-report-btn"),
   feedbackTracker: document.querySelector("#feedback-tracker"),
@@ -552,6 +559,7 @@ function render() {
   renderTrainingPlans();
   renderWeeklyFocus();
   renderSeasonHub();
+  renderPlayerNotes();
   renderNotepad();
   renderPostGameReport();
 }
@@ -995,6 +1003,7 @@ function refreshPlanAndRender() {
   renderTrainingPlans();
   renderWeeklyFocus();
   renderSeasonHub();
+  renderPlayerNotes();
   renderPostGameReport();
 }
 
@@ -1027,6 +1036,7 @@ function syncGameView() {
     trainingPlans: elements.trainingPlansSection,
     weeklyFocus: elements.weeklyFocusSection,
     seasonHub: elements.seasonHubSection,
+    playerNotes: elements.playerNotesSection,
     notepad: elements.notepadSection,
     report: elements.reportSection,
   };
@@ -2592,6 +2602,402 @@ function formatSeasonHubDate(value) {
   });
 }
 
+function renderPlayerNotes() {
+  const content = elements.playerNotesContent;
+  if (!content) {
+    return;
+  }
+
+  const availablePlayers = state.players.filter((player) => player.name);
+  if (!availablePlayers.length) {
+    content.innerHTML = '<p class="placeholder">Add players to start taking player notes.</p>';
+    return;
+  }
+
+  syncSelectedPlayerNote();
+  state.playerNotes.draft = normalizePlayerNoteDraft(state.playerNotes.draft);
+
+  const activeNote = getSelectedPlayerNote();
+  const draft = activeNote
+    ? clonePlayerNoteDraft(state.playerNotes.draft)
+    : state.playerNotes.draft;
+  const noteTitle = activeNote
+    ? `Editing ${getPlayerNoteLabel(activeNote)}`
+    : "New Player Note";
+  const noteHelper = activeNote
+    ? `Last saved ${formatPlayerNoteDate(activeNote.updatedAt)}.`
+    : "Capture the current development note for one player.";
+  const saveDisabled = !activeNote && isPlayerNoteDraftEmpty(draft);
+  const savedNotes = [...state.playerNotes.items].reverse();
+  const playerOptions = availablePlayers
+    .map((player) => `<option value="${escapeHtml(player.id)}" ${player.id === state.playerNotes.selectedPlayerId ? "selected" : ""}>${escapeHtml(player.name)}</option>`)
+    .join("");
+
+  const noteListMarkup = savedNotes.length
+    ? savedNotes.map((note) => `
+      <button class="review-list-item ${note.playerId === state.playerNotes.selectedPlayerId ? "active" : ""}" type="button" data-player-note-id="${note.id}">
+        <span class="review-list-title">${escapeHtml(getPlayerNoteLabel(note))}</span>
+        <span class="review-list-meta">${escapeHtml(note.bestRole || "No role recorded")} · ${escapeHtml(formatPlayerNoteDate(note.updatedAt))}</span>
+      </button>
+    `).join("")
+    : '<p class="placeholder">No player notes saved yet.</p>';
+
+  content.innerHTML = `
+    <article class="feedback-panel player-note-editor">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>${escapeHtml(noteTitle)}</h3>
+          <p class="helper">${escapeHtml(noteHelper)}</p>
+        </div>
+        <div class="inline-actions compact-actions">
+          <button id="new-player-note-btn" type="button">New Note</button>
+          <button id="save-player-note-btn" class="primary" type="button" ${saveDisabled ? "disabled" : ""}>Save Note</button>
+        </div>
+      </div>
+
+      <div class="feedback-player-switcher">
+        <label class="player-select-wrap">
+          Player
+          <select id="player-note-player-select">${playerOptions}</select>
+        </label>
+        <div class="feedback-player-status">
+          <span class="live-count-pill">Player note</span>
+        </div>
+      </div>
+
+      <div class="review-form-grid">
+        <label class="review-full-width">
+          Player Name
+          <input id="player-note-name" type="text" value="${escapeHtml(draft.playerName)}" readonly>
+        </label>
+        <label class="review-full-width">
+          Strengths
+          <textarea id="player-note-strengths" rows="3" placeholder="What this player already does well...">${escapeHtml(draft.strengths)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Current Focus
+          <textarea id="player-note-current-focus" rows="3" placeholder="What this player is working on now...">${escapeHtml(draft.currentFocus)}</textarea>
+        </label>
+        <label>
+          Best Role
+          <input id="player-note-best-role" type="text" value="${escapeHtml(draft.bestRole)}" placeholder="Best role or line">
+        </label>
+        <label>
+          Coaching Cue
+          <input id="player-note-coaching-cue" type="text" value="${escapeHtml(draft.coachingCue)}" placeholder="Simple cue to give the player">
+        </label>
+        <label class="review-full-width">
+          Confidence / Development Note
+          <textarea id="player-note-development" rows="3" placeholder="Confidence or development note...">${escapeHtml(draft.confidenceDevelopmentNote)}</textarea>
+        </label>
+        <label class="review-full-width">
+          Latest Update Note
+          <textarea id="player-note-update" rows="4" placeholder="Latest update, game notes, training notes...">${escapeHtml(draft.latestUpdateNote)}</textarea>
+        </label>
+      </div>
+    </article>
+
+    <article class="feedback-panel player-note-list-panel">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>Saved Player Notes</h3>
+        </div>
+      </div>
+      <div class="review-list">
+        ${noteListMarkup}
+      </div>
+    </article>
+  `;
+
+  bindPlayerNotesEvents();
+}
+
+function bindPlayerNotesEvents() {
+  const content = elements.playerNotesContent;
+  if (!content) {
+    return;
+  }
+
+  const playerSelect = content.querySelector("#player-note-player-select");
+  if (playerSelect) {
+    playerSelect.addEventListener("change", () => {
+      loadPlayerNoteForPlayer(playerSelect.value);
+    });
+  }
+
+  const newNoteBtn = content.querySelector("#new-player-note-btn");
+  if (newNoteBtn) {
+    newNoteBtn.addEventListener("click", startNewPlayerNote);
+  }
+
+  const saveNoteBtn = content.querySelector("#save-player-note-btn");
+  if (saveNoteBtn) {
+    saveNoteBtn.addEventListener("click", savePlayerNoteDraft);
+  }
+
+  const fieldMap = [
+    ["#player-note-strengths", "strengths"],
+    ["#player-note-current-focus", "currentFocus"],
+    ["#player-note-best-role", "bestRole"],
+    ["#player-note-coaching-cue", "coachingCue"],
+    ["#player-note-development", "confidenceDevelopmentNote"],
+    ["#player-note-update", "latestUpdateNote"],
+  ];
+
+  fieldMap.forEach(([selector, field]) => {
+    const input = content.querySelector(selector);
+    if (!input) {
+      return;
+    }
+
+    input.addEventListener("input", () => {
+      state.playerNotes.draft[field] = input.value;
+      saveState();
+      syncPlayerNotesActionState();
+    });
+  });
+
+  content.querySelectorAll("[data-player-note-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      loadPlayerNoteIntoDraft(button.dataset.playerNoteId);
+    });
+  });
+
+  syncPlayerNotesActionState();
+}
+
+function syncPlayerNotesActionState() {
+  const saveNoteBtn = elements.playerNotesContent?.querySelector("#save-player-note-btn");
+  if (!saveNoteBtn) {
+    return;
+  }
+
+  saveNoteBtn.disabled = !state.playerNotes.selectedPlayerId && isPlayerNoteDraftEmpty(state.playerNotes.draft);
+}
+
+function syncSelectedPlayerNote() {
+  const availablePlayers = state.players.filter((player) => player.name);
+
+  if (!availablePlayers.length) {
+    state.playerNotes.selectedPlayerId = null;
+    return;
+  }
+
+  const selectedStillExists = availablePlayers.some((player) => player.id === state.playerNotes.selectedPlayerId);
+  if (!selectedStillExists) {
+    state.playerNotes.selectedPlayerId = availablePlayers[0].id;
+  }
+}
+
+function startNewPlayerNote() {
+  if (isPlayerNoteDraftDirty()) {
+    const confirmed = window.confirm("Discard the current player note draft and start a new one?");
+    if (!confirmed) {
+      return;
+    }
+  }
+
+  state.playerNotes.selectedPlayerId = null;
+  state.playerNotes.draft = createEmptyPlayerNoteDraft();
+  saveState();
+  renderPlayerNotes();
+}
+
+function savePlayerNoteDraft() {
+  const draft = normalizePlayerNoteDraft(state.playerNotes.draft);
+  const hasDraftContent = !isPlayerNoteDraftEmpty(draft);
+  const selectedNote = getSelectedPlayerNote();
+
+  if (!hasDraftContent && !selectedNote) {
+    return;
+  }
+
+  const now = new Date().toISOString();
+
+  if (selectedNote) {
+    Object.assign(selectedNote, draft, {
+      updatedAt: now,
+      createdAt: selectedNote.createdAt || now,
+    });
+  } else {
+    const note = {
+      id: createId(),
+      ...draft,
+      createdAt: now,
+      updatedAt: now,
+    };
+    state.playerNotes.items.push(note);
+    state.playerNotes.selectedPlayerId = note.playerId;
+  }
+
+  const savedNote = getSelectedPlayerNote();
+  if (savedNote) {
+    state.playerNotes.draft = clonePlayerNoteDraft(savedNote);
+  }
+
+  saveState();
+  renderPlayerNotes();
+}
+
+function loadPlayerNoteForPlayer(playerId) {
+  const note = state.playerNotes.items.find((entry) => entry.playerId === playerId);
+  if (note) {
+    if (isPlayerNoteDraftDirty() && state.playerNotes.selectedPlayerId !== playerId) {
+      const confirmed = window.confirm("Discard the current player note draft and open another player?");
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    state.playerNotes.selectedPlayerId = note.playerId;
+    state.playerNotes.draft = clonePlayerNoteDraft(note);
+  } else {
+    if (isPlayerNoteDraftDirty() && state.playerNotes.selectedPlayerId !== playerId) {
+      const confirmed = window.confirm("Discard the current player note draft and switch players?");
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    state.playerNotes.selectedPlayerId = playerId;
+    state.playerNotes.draft = createEmptyPlayerNoteDraft();
+    state.playerNotes.draft.playerId = playerId;
+    state.playerNotes.draft.playerName = getPlayerNameById(playerId);
+  }
+
+  saveState();
+  renderPlayerNotes();
+}
+
+function loadPlayerNoteIntoDraft(noteId) {
+  const note = state.playerNotes.items.find((entry) => entry.id === noteId);
+  if (!note) {
+    return;
+  }
+
+  if (isPlayerNoteDraftDirty() && state.playerNotes.selectedPlayerId !== note.playerId) {
+    const confirmed = window.confirm("Discard the current player note draft and open another note?");
+    if (!confirmed) {
+      return;
+    }
+  }
+
+  state.playerNotes.selectedPlayerId = note.playerId;
+  state.playerNotes.draft = clonePlayerNoteDraft(note);
+  saveState();
+  renderPlayerNotes();
+}
+
+function getSelectedPlayerNote() {
+  if (!state.playerNotes.selectedPlayerId) {
+    return null;
+  }
+
+  return state.playerNotes.items.find((note) => note.playerId === state.playerNotes.selectedPlayerId) || null;
+}
+
+function getPlayerNameById(playerId) {
+  const player = state.players.find((entry) => entry.id === playerId);
+  return player?.name || "";
+}
+
+function clonePlayerNoteDraft(note) {
+  const normalized = normalizePlayerNoteDraft(note);
+  return { ...normalized };
+}
+
+function createEmptyPlayerNoteDraft() {
+  return {
+    playerId: "",
+    playerName: "",
+    strengths: "",
+    currentFocus: "",
+    bestRole: "",
+    coachingCue: "",
+    confidenceDevelopmentNote: "",
+    latestUpdateNote: "",
+  };
+}
+
+function normalizePlayerNoteDraft(note) {
+  const source = note && typeof note === "object" ? note : {};
+  const blank = createEmptyPlayerNoteDraft();
+
+  return {
+    playerId: `${source.playerId ?? blank.playerId}`,
+    playerName: `${source.playerName ?? blank.playerName}`,
+    strengths: `${source.strengths ?? blank.strengths}`,
+    currentFocus: `${source.currentFocus ?? blank.currentFocus}`,
+    bestRole: `${source.bestRole ?? blank.bestRole}`,
+    coachingCue: `${source.coachingCue ?? blank.coachingCue}`,
+    confidenceDevelopmentNote: `${source.confidenceDevelopmentNote ?? blank.confidenceDevelopmentNote}`,
+    latestUpdateNote: `${source.latestUpdateNote ?? blank.latestUpdateNote}`,
+  };
+}
+
+function normalizePlayerNoteItem(note) {
+  const source = note && typeof note === "object" ? note : {};
+  const draft = normalizePlayerNoteDraft(source);
+  const currentPlayerName = getPlayerNameById(draft.playerId);
+
+  return {
+    id: `${source.id || createId()}`,
+    ...draft,
+    playerName: currentPlayerName || draft.playerName,
+    createdAt: source.createdAt || source.updatedAt || new Date().toISOString(),
+    updatedAt: source.updatedAt || source.createdAt || new Date().toISOString(),
+  };
+}
+
+function isPlayerNoteDraftEmpty(draft) {
+  const normalized = normalizePlayerNoteDraft(draft);
+  return Object.entries(normalized)
+    .filter(([key]) => key !== "playerId" && key !== "playerName")
+    .every(([, value]) => `${value}`.trim() === "");
+}
+
+function isPlayerNoteDraftDirty() {
+  const selectedNote = getSelectedPlayerNote();
+  if (!selectedNote) {
+    return !isPlayerNoteDraftEmpty(state.playerNotes.draft);
+  }
+
+  return !arePlayerNoteEntriesEqual(selectedNote, state.playerNotes.draft);
+}
+
+function arePlayerNoteEntriesEqual(left, right) {
+  const leftDraft = normalizePlayerNoteDraft(left);
+  const rightDraft = normalizePlayerNoteDraft(right);
+
+  return Object.keys(leftDraft).every((key) => `${leftDraft[key]}` === `${rightDraft[key]}`);
+}
+
+function getPlayerNoteLabel(note) {
+  const name = `${note?.playerName || ""}`.trim();
+  if (name) {
+    return name;
+  }
+
+  return "Untitled Note";
+}
+
+function formatPlayerNoteDate(value) {
+  if (!value) {
+    return "Just saved";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Just saved";
+  }
+
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function bindFeedbackTrackerEvents() {
   elements.feedbackTracker.querySelectorAll("[data-feedback-quarter]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -3462,6 +3868,7 @@ function saveState() {
     trainingPlans: state.trainingPlans,
     weeklyFocus: state.weeklyFocus,
     seasonHub: state.seasonHub,
+    playerNotes: state.playerNotes,
   });
   window.localStorage.setItem(STORAGE_KEY, payload);
 }
@@ -3633,6 +4040,42 @@ function loadState() {
       selectedHubId,
       draft: hubDraft,
       items: hubItems,
+    };
+
+    const loadedPlayerNotes = Array.isArray(parsedState.playerNotes)
+      ? { items: parsedState.playerNotes }
+      : (parsedState.playerNotes && typeof parsedState.playerNotes === "object"
+        ? parsedState.playerNotes
+        : {});
+    const noteItems = Array.isArray(loadedPlayerNotes.items)
+      ? loadedPlayerNotes.items.map((note) => normalizePlayerNoteItem(note))
+      : [];
+    let selectedPlayerId = loadedPlayerNotes.selectedPlayerId || null;
+    let playerNoteDraft = normalizePlayerNoteDraft(loadedPlayerNotes.draft);
+
+    if (selectedPlayerId && !noteItems.some((note) => note.playerId === selectedPlayerId)) {
+      selectedPlayerId = null;
+    }
+
+    if (!selectedPlayerId && noteItems.length) {
+      const latestNote = noteItems[noteItems.length - 1];
+      selectedPlayerId = latestNote.playerId;
+      if (isPlayerNoteDraftEmpty(playerNoteDraft)) {
+        playerNoteDraft = clonePlayerNoteDraft(latestNote);
+      }
+    }
+
+    if (selectedPlayerId && isPlayerNoteDraftEmpty(playerNoteDraft)) {
+      const selectedNote = noteItems.find((note) => note.playerId === selectedPlayerId);
+      if (selectedNote) {
+        playerNoteDraft = clonePlayerNoteDraft(selectedNote);
+      }
+    }
+
+    state.playerNotes = {
+      selectedPlayerId,
+      draft: playerNoteDraft,
+      items: noteItems,
     };
   } catch (error) {
     console.error("Could not load saved app data.", error);

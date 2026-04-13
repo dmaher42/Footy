@@ -187,7 +187,9 @@ select:focus {
 .weekly-focus-editor,
 .weekly-focus-list-panel,
 .season-hub-editor,
-.season-hub-list-panel {
+.season-hub-list-panel,
+.player-note-editor,
+.player-note-list-panel {
   display: grid;
   gap: 1rem;
 }

@@ -2,10 +2,7 @@
   const STORAGE_KEY = "footy-player-manager-state";
   const CANONICAL_ID = "seed-training-plan-kicking-leading-patterns";
   const CANONICAL_TITLE = "Kicking and Leading Patterns";
-  const LEGACY_TITLES = new Set([
-    "Contest First, Then Structure",
-    "Kicking and Leading Patterns"
-  ]);
+  const LEGACY_TITLES = new Set([CANONICAL_TITLE]);
 
   const createSeedPlan = (timestamp) => ({
     id: CANONICAL_ID,
@@ -16,26 +13,21 @@
     duration: "60 minutes",
     warmUp: [
       "5:00-5:10 Partner kick progression",
-      "No-step kick, 1-step kick, 3-5-step kick",
-      "Focus: clean kicking technique, ball drop, balance, and connection",
-      "No pressure, take your time"
+      "No step kick, 1 step kick, 3-5 step kick",
     ].join("\n"),
     fundamentals: [
       "5:10-5:18 W drill",
-      "Kick to shape, timing, and leading into space",
-      "5:18-5:28 Handball 2v1 down the line",
-      "Support run, draw and release, run to receive"
+      "Kick to shape, lead timing, face forward immediately",
+      "5:18-5:28 HB 2v1 down the line",
+      "Support run, draw and release, run to receive",
     ].join("\n"),
     mainDrills: [
       "5:28-5:43 Large oval leading drill",
-      "Teach where to lead, how to lead, and how to kick to those leads",
-      "5:43-5:58 CHB to forward transition drill",
-      "Defenders start at CHF, attackers start at CHB, move the ball forward and finish with a shot on goal"
+      "Where to lead, how to lead, how to kick to the lead",
     ].join("\n"),
     gamePlayConditionedGame: [
-      "Finish inside the CHB-to-forward transition drill",
-      "Build from structured reps into more live reps",
-      "Main goal: connect back-half ball movement to a clean forward entry and shot"
+      "5:43-5:58 CHB to forward transition drill",
+      "Transition ball movement, forward entry, finish with shot on goal",
     ].join("\n"),
     coachingCues: [
       "Take your time",
@@ -43,17 +35,21 @@
       "One leads, one holds",
       "Kick to the run",
       "Face forward immediately",
-      "Run to receive"
+      "Run to receive",
     ].join("\n"),
     notesReviewNextTime: [
       "Notebook: Training Planning",
       "Team: U14 Nairne",
-      "Theme: clean kicking and clearer leading patterns",
-      "Session flow: partner kick progression, W drill, HB 2v1 down the line, large oval leading drill, CHB-to-forward transition drill",
-      "Main teaching focus: where to lead, how to lead, how to kick to leading players, and connecting back-half ball movement into forward entries"
+      "Focus areas: kicking execution, leading patterns, support run, forward transition",
+      "Session blocks:",
+      "- 5:00-5:10 Partner kick progression",
+      "- 5:10-5:18 W drill",
+      "- 5:18-5:28 HB 2v1 down the line",
+      "- 5:28-5:43 Large oval leading drill",
+      "- 5:43-5:58 CHB to forward transition drill",
     ].join("\n"),
     createdAt: timestamp,
-    updatedAt: timestamp
+    updatedAt: timestamp,
   });
 
   try {
@@ -79,7 +75,7 @@
         ...seedPlan,
         id: existingPlan.id || CANONICAL_ID,
         createdAt: existingPlan.createdAt || now,
-        updatedAt: now
+        updatedAt: now,
       };
       trainingPlans.selectedPlanId = items[existingIndex].id;
       trainingPlans.draft = {
@@ -93,7 +89,7 @@
         mainDrills: items[existingIndex].mainDrills,
         gamePlayConditionedGame: items[existingIndex].gamePlayConditionedGame,
         coachingCues: items[existingIndex].coachingCues,
-        notesReviewNextTime: items[existingIndex].notesReviewNextTime
+        notesReviewNextTime: items[existingIndex].notesReviewNextTime,
       };
     } else {
       items.push(seedPlan);
@@ -109,7 +105,7 @@
         mainDrills: seedPlan.mainDrills,
         gamePlayConditionedGame: seedPlan.gamePlayConditionedGame,
         coachingCues: seedPlan.coachingCues,
-        notesReviewNextTime: seedPlan.notesReviewNextTime
+        notesReviewNextTime: seedPlan.notesReviewNextTime,
       };
     }
 

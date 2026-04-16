@@ -1,9 +1,10 @@
-const ASSET_VERSION = "2026.04.13.8";
+const ASSET_VERSION = "2026.04.16.1";
 const CACHE_NAME = `footy-player-manager-v5-${ASSET_VERSION}`;
 const APP_SHELL = [
   "./",
   "./index.html",
   `./styles.css?v=${ASSET_VERSION}`,
+  `./training-plan-patch.js?v=${ASSET_VERSION}`,
   `./app.js?v=${ASSET_VERSION}`,
   `./manifest.json?v=${ASSET_VERSION}`,
   "./version.json",

@@ -2310,6 +2310,59 @@ function normalizeWeeklyFocusItem(focus) {
   };
 }
 
+function createSeedWeeklyFocusItem() {
+  return normalizeWeeklyFocusItem({
+    id: "seed-weekly-focus-stick-together-draft",
+    title: "Weekly Message Draft",
+    context: "Brain Dump notebook summary",
+    mainTheme: "Together makes us stronger.",
+    keyPriorities: [
+      "No one does it alone.",
+      "Help the teammate next to you.",
+      "Stay connected.",
+      "Make the game easier for each other.",
+      "Protect each other by the way we compete, talk, defend, and move.",
+    ].join("\n"),
+    carryForwardIssue: [
+      "Support at the contest.",
+      "Defend together.",
+      "Communicate early and clearly.",
+    ].join("\n"),
+    gameDayMessageTheme: [
+      "Stick together.",
+      "Support each other.",
+      "Protect each other.",
+    ].join("\n"),
+    notes: [
+      "This is rough working material from the Brain Dump notebook, not season truth.",
+      "How the message links to gameplay:",
+      "- lead into space to help the kicker",
+      "- do not all lead at once into the same area",
+      "- create one clear option, then the next option",
+      "- make teammates' jobs easier",
+      "Cleaner game-day structure:",
+      "Part 1: Today is about sticking together. Everyone contributes. Everyone supports. Everyone helps the person next to them.",
+      "Part 2: support at the contest; defend together; talk early; lead into space; do not all go to the same spot; give the ball carrier a clear option; make each other's job easier.",
+      "Theme options (draft): Stick Together; Stand Together; Play for Each Other; Protect the Team; Connected Footy.",
+    ].join("\n"),
+  });
+}
+
+function seedWeeklyFocusIfMissing() {
+  const seedId = "seed-weekly-focus-stick-together-draft";
+  const seedTitle = "Weekly Message Draft";
+
+  if (state.weeklyFocus.items.some((focus) => focus.id === seedId || `${focus.title || ""}`.trim() === seedTitle)) {
+    return false;
+  }
+
+  const seedFocus = createSeedWeeklyFocusItem();
+  state.weeklyFocus.items.push(seedFocus);
+  state.weeklyFocus.selectedFocusId = seedFocus.id;
+  state.weeklyFocus.draft = cloneWeeklyFocusDraft(seedFocus);
+  return true;
+}
+
 function isWeeklyFocusDraftEmpty(draft) {
   const normalized = normalizeWeeklyFocusDraft(draft);
   return Object.values(normalized).every((value) => `${value}`.trim() === "");
@@ -4928,7 +4981,10 @@ function loadState() {
       items: noteItems,
     };
 
-    if (seedTrainingPlanIfMissing()) {
+    const seededWeeklyFocus = seedWeeklyFocusIfMissing();
+    const seededTrainingPlan = seedTrainingPlanIfMissing();
+
+    if (seededWeeklyFocus || seededTrainingPlan) {
       saveState();
     }
   } catch (error) {

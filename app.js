@@ -2347,6 +2347,8 @@ function renderSeasonHub() {
         </div>
         <div class="inline-actions compact-actions">
           <button id="new-season-hub-btn" type="button">New Snapshot</button>
+          <button id="copy-season-snapshot-btn" class="utility-btn" type="button">Copy Current Season Snapshot</button>
+          <button id="export-season-snapshot-btn" class="utility-btn" type="button">Export Current Season Snapshot</button>
           <button id="save-season-hub-btn" class="primary" type="button" ${saveDisabled ? "disabled" : ""}>Save Snapshot</button>
         </div>
       </div>
@@ -2432,6 +2434,16 @@ function bindSeasonHubEvents() {
   const saveHubBtn = content.querySelector("#save-season-hub-btn");
   if (saveHubBtn) {
     saveHubBtn.addEventListener("click", saveSeasonHubDraft);
+  }
+
+  const copySnapshotBtn = content.querySelector("#copy-season-snapshot-btn");
+  if (copySnapshotBtn) {
+    copySnapshotBtn.addEventListener("click", copyCurrentSeasonSnapshot);
+  }
+
+  const exportSnapshotBtn = content.querySelector("#export-season-snapshot-btn");
+  if (exportSnapshotBtn) {
+    exportSnapshotBtn.addEventListener("click", exportCurrentSeasonSnapshot);
   }
 
   const fieldMap = [
@@ -3881,6 +3893,179 @@ function showMessages(messages) {
   elements.messages.innerHTML = messages
     .map((message) => `<div class="message ${message.type}">${escapeHtml(message.text)}</div>`)
     .join("");
+}
+
+function buildCurrentSeasonSnapshot() {
+  const seasonHubDraft = normalizeSeasonHubDraft(state.seasonHub.draft);
+  const selectedSeasonHub = getSelectedSeasonHub();
+
+  return {
+    schemaVersion: 1,
+    appVersion: APP_VERSION,
+    exportedAt: new Date().toISOString(),
+    teamContext: {
+      teamName: seasonHubDraft.team,
+      seasonYear: seasonHubDraft.seasonYear,
+      competition: seasonHubDraft.competition,
+      coachingRole: seasonHubDraft.coachingRole,
+      currentQuarter: getCurrentFeedbackQuarter(),
+      settings: {
+        periodLabel: state.settings.periodLabel,
+        periodCount: state.settings.periodCount,
+        playersOnField: state.settings.playersOnField,
+      },
+      playerCount: state.players.length,
+      activePlayerCount: state.players.filter((player) => player.name && player.active).length,
+      players: state.players.map(projectSnapshotPlayer),
+    },
+    seasonHub: projectSnapshotEntry(seasonHubDraft, selectedSeasonHub),
+    weeklyFocus: projectSnapshotEntry(normalizeWeeklyFocusDraft(state.weeklyFocus.draft), getSelectedWeeklyFocus()),
+    latestGameReview: projectSnapshotEntry(normalizeGameReviewDraft(state.gameReviews.draft), getSelectedGameReview()),
+    latestTrainingPlan: projectSnapshotEntry(normalizeTrainingPlanDraft(state.trainingPlans.draft), getSelectedTrainingPlan()),
+    playerNotes: state.playerNotes.items.map(projectPlayerNoteSnapshot),
+  };
+}
+
+function exportCurrentSeasonSnapshot() {
+  try {
+    const snapshot = buildCurrentSeasonSnapshot();
+    const payload = JSON.stringify(snapshot, null, 2);
+    const filename = buildSeasonSnapshotFileName(snapshot);
+    const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = filename;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 0);
+
+    showMessages([{ type: "info", text: `Exported season snapshot as ${filename}.` }]);
+  } catch (error) {
+    console.error("Could not export season snapshot.", error);
+    showMessages([{ type: "warn", text: "Could not export the season snapshot." }]);
+  }
+}
+
+function copyCurrentSeasonSnapshot() {
+  try {
+    const snapshot = buildCurrentSeasonSnapshot();
+    const payload = JSON.stringify(snapshot, null, 2);
+
+    copyTextToClipboard(payload).then(() => {
+      showMessages([{ type: "info", text: "Copied the current season snapshot to the clipboard." }]);
+    }).catch((error) => {
+      console.error("Could not copy season snapshot.", error);
+      showMessages([{ type: "warn", text: "Could not copy the season snapshot." }]);
+    });
+  } catch (error) {
+    console.error("Could not copy season snapshot.", error);
+    showMessages([{ type: "warn", text: "Could not copy the season snapshot." }]);
+  }
+}
+
+function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+
+  return new Promise((resolve, reject) => {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "readonly");
+    textarea.style.position = "fixed";
+    textarea.style.top = "-9999px";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    try {
+      const copied = document.execCommand("copy");
+      textarea.remove();
+
+      if (copied) {
+        resolve();
+        return;
+      }
+
+      reject(new Error("Clipboard copy command was rejected."));
+    } catch (error) {
+      textarea.remove();
+      reject(error);
+    }
+  });
+}
+
+function projectSnapshotEntry(draft, entry) {
+  const normalizedDraft = draft && typeof draft === "object" ? draft : {};
+
+  return {
+    id: entry?.id || null,
+    createdAt: entry?.createdAt || null,
+    updatedAt: entry?.updatedAt || null,
+    ...normalizedDraft,
+  };
+}
+
+function projectSnapshotPlayer(player) {
+  return {
+    id: `${player?.id || ""}`,
+    name: `${player?.name || ""}`,
+    preferredPosition: `${player?.preferredPosition || ""}`,
+    active: player?.active !== false,
+    canBench: player?.canBench !== false,
+    benchFirst: player?.benchFirst === true,
+    maxBenchPeriods: normalizeNullableNonNegativeNumber(player?.maxBenchPeriods),
+  };
+}
+
+function projectPlayerNoteSnapshot(note) {
+  const draft = normalizePlayerNoteDraft(note);
+
+  return {
+    id: `${note?.id || ""}`,
+    createdAt: note?.createdAt || null,
+    updatedAt: note?.updatedAt || null,
+    ...draft,
+  };
+}
+
+function getCurrentFeedbackQuarter() {
+  const maxQuarter = normalizePositiveNumber(state.settings.periodCount, 4);
+  const quarter = normalizePositiveNumber(state.feedback.currentQuarter, 1);
+  return Math.min(Math.max(quarter, 1), maxQuarter);
+}
+
+function buildSeasonSnapshotFileName(snapshot) {
+  const teamName = `${snapshot?.teamContext?.teamName || ""}`.trim();
+  const seasonYear = `${snapshot?.teamContext?.seasonYear || ""}`.trim();
+  const dateStamp = `${snapshot?.exportedAt || new Date().toISOString()}`.slice(0, 10);
+  const parts = ["footy", "season", "snapshot"];
+
+  if (teamName) {
+    parts.push(slugifyForFilename(teamName));
+  }
+
+  if (seasonYear) {
+    parts.push(slugifyForFilename(seasonYear));
+  }
+
+  parts.push(dateStamp);
+  return `${parts.filter(Boolean).join("-")}.json`;
+}
+
+function slugifyForFilename(value) {
+  return `${value}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-+/g, "-");
 }
 
 function normalizePositiveNumber(value, fallback) {

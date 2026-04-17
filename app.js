@@ -2415,6 +2415,23 @@ function renderSeasonHub() {
         ${hubListMarkup}
       </div>
     </article>
+
+    <article class="feedback-panel season-hub-import-panel">
+      <div class="section-heading report-card-header">
+        <div>
+          <h3>Import Season Snapshot</h3>
+          <p class="helper">Paste the exported JSON or a smaller update block here, then apply it to the current season state.</p>
+        </div>
+        <div class="inline-actions compact-actions">
+          <button id="apply-season-snapshot-btn" class="primary" type="button">Apply Snapshot Update</button>
+        </div>
+      </div>
+
+      <label class="review-full-width">
+        Snapshot JSON
+        <textarea id="season-snapshot-input" rows="10" placeholder='Paste a season snapshot or update block here...'></textarea>
+      </label>
+    </article>
   `;
 
   bindSeasonHubEvents();
@@ -2444,6 +2461,11 @@ function bindSeasonHubEvents() {
   const exportSnapshotBtn = content.querySelector("#export-season-snapshot-btn");
   if (exportSnapshotBtn) {
     exportSnapshotBtn.addEventListener("click", exportCurrentSeasonSnapshot);
+  }
+
+  const applySnapshotBtn = content.querySelector("#apply-season-snapshot-btn");
+  if (applySnapshotBtn) {
+    applySnapshotBtn.addEventListener("click", importCurrentSeasonSnapshot);
   }
 
   const fieldMap = [
@@ -4000,6 +4022,407 @@ function copyTextToClipboard(text) {
       reject(error);
     }
   });
+}
+
+function importCurrentSeasonSnapshot() {
+  const content = elements.seasonHubContent;
+  const input = content?.querySelector("#season-snapshot-input");
+  const rawText = `${input?.value || ""}`.trim();
+
+  if (!rawText) {
+    showMessages([{ type: "warn", text: "Paste a season snapshot or update block first." }]);
+    return;
+  }
+
+  let parsedSnapshot;
+  try {
+    parsedSnapshot = JSON.parse(rawText);
+  } catch (error) {
+    console.error("Could not parse season snapshot.", error);
+    showMessages([{ type: "warn", text: "That text is not valid JSON." }]);
+    return;
+  }
+
+  if (!parsedSnapshot || typeof parsedSnapshot !== "object" || Array.isArray(parsedSnapshot)) {
+    showMessages([{ type: "warn", text: "The pasted data must be a JSON object." }]);
+    return;
+  }
+
+  const validation = validateSeasonSnapshotImport(parsedSnapshot);
+  if (!validation.valid) {
+    showMessages([{ type: "warn", text: validation.message }]);
+    return;
+  }
+
+  const targetLabels = validation.targets.map(formatImportTargetLabel);
+  const confirmed = window.confirm(
+    `Apply this update to the current season state?\n\nThis will update: ${targetLabels.join(", ")}.`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const importedSections = applySeasonSnapshotImport(parsedSnapshot);
+  saveState();
+  render();
+
+  if (input) {
+    input.value = "";
+  }
+
+  showMessages([{ type: "info", text: `Applied season update for ${importedSections.join(", ")}.` }]);
+}
+
+function validateSeasonSnapshotImport(snapshot) {
+  const targets = [];
+  const teamContext = snapshot.teamContext && typeof snapshot.teamContext === "object" ? snapshot.teamContext : null;
+
+  if (snapshot.schemaVersion !== undefined && Number.parseInt(snapshot.schemaVersion, 10) !== 1) {
+    return {
+      valid: false,
+      message: "This snapshot uses an unsupported schema version.",
+      targets,
+    };
+  }
+
+  if (teamContext) {
+    targets.push("team context");
+  }
+
+  if (snapshot.seasonHub && typeof snapshot.seasonHub === "object") {
+    targets.push("season hub");
+  }
+
+  if (snapshot.weeklyFocus && typeof snapshot.weeklyFocus === "object") {
+    targets.push("weekly focus");
+  }
+
+  if (snapshot.latestGameReview && typeof snapshot.latestGameReview === "object") {
+    targets.push("latest game review");
+  }
+
+  if (snapshot.latestTrainingPlan && typeof snapshot.latestTrainingPlan === "object") {
+    targets.push("latest training plan");
+  }
+
+  if (Array.isArray(snapshot.playerNotes)) {
+    targets.push("player notes");
+  }
+
+  if (!targets.length) {
+    return {
+      valid: false,
+      message: "No recognized season snapshot sections were found.",
+      targets,
+    };
+  }
+
+  return {
+    valid: true,
+    message: "",
+    targets,
+  };
+}
+
+function formatImportTargetLabel(target) {
+  return `${target}`;
+}
+
+function applySeasonSnapshotImport(snapshot) {
+  const updatedSections = [];
+  const now = new Date().toISOString();
+  const teamContext = snapshot.teamContext && typeof snapshot.teamContext === "object" ? snapshot.teamContext : null;
+
+  if (teamContext) {
+    applyTeamContextSnapshot(teamContext);
+    updatedSections.push("team context");
+  }
+
+  if (snapshot.seasonHub && typeof snapshot.seasonHub === "object") {
+    mergeSnapshotSection(
+      state.seasonHub.items,
+      state.seasonHub.selectedHubId,
+      snapshot.seasonHub,
+      normalizeSeasonHubDraft,
+      (source) => normalizeSeasonHubItem(source),
+      (item) => {
+        state.seasonHub.selectedHubId = item.id;
+        state.seasonHub.draft = cloneSeasonHubDraft(item);
+      },
+      now
+    );
+    updatedSections.push("season hub");
+  }
+
+  if (snapshot.weeklyFocus && typeof snapshot.weeklyFocus === "object") {
+    mergeSnapshotSection(
+      state.weeklyFocus.items,
+      state.weeklyFocus.selectedFocusId,
+      snapshot.weeklyFocus,
+      normalizeWeeklyFocusDraft,
+      (source) => normalizeWeeklyFocusItem(source),
+      (item) => {
+        state.weeklyFocus.selectedFocusId = item.id;
+        state.weeklyFocus.draft = cloneWeeklyFocusDraft(item);
+      },
+      now
+    );
+    updatedSections.push("weekly focus");
+  }
+
+  if (snapshot.latestGameReview && typeof snapshot.latestGameReview === "object") {
+    mergeSnapshotSection(
+      state.gameReviews.items,
+      state.gameReviews.selectedReviewId,
+      snapshot.latestGameReview,
+      normalizeGameReviewDraft,
+      (source) => normalizeGameReviewItem(source),
+      (item) => {
+        state.gameReviews.selectedReviewId = item.id;
+        state.gameReviews.draft = cloneGameReviewDraft(item);
+      },
+      now
+    );
+    updatedSections.push("latest game review");
+  }
+
+  if (snapshot.latestTrainingPlan && typeof snapshot.latestTrainingPlan === "object") {
+    mergeSnapshotSection(
+      state.trainingPlans.items,
+      state.trainingPlans.selectedPlanId,
+      snapshot.latestTrainingPlan,
+      normalizeTrainingPlanDraft,
+      (source) => normalizeTrainingPlanItem(source),
+      (item) => {
+        state.trainingPlans.selectedPlanId = item.id;
+        state.trainingPlans.draft = cloneTrainingPlanDraft(item);
+      },
+      now
+    );
+    updatedSections.push("latest training plan");
+  }
+
+  if (Array.isArray(snapshot.playerNotes)) {
+    const importedNotes = snapshot.playerNotes
+      .map((note) => normalizeImportedPlayerNote(note))
+      .filter((note) => note.name || note.playerName || note.playerId);
+
+    importedNotes.forEach((note) => {
+      mergePlayerNoteSnapshot(state.playerNotes.items, note, now);
+    });
+
+    if (importedNotes.length) {
+      const latestImportedNote = importedNotes[importedNotes.length - 1];
+      state.playerNotes.selectedPlayerId = latestImportedNote.playerId || state.playerNotes.selectedPlayerId;
+      state.playerNotes.draft = clonePlayerNoteDraft(
+        state.playerNotes.items.find((note) => note.playerId === state.playerNotes.selectedPlayerId) || latestImportedNote
+      );
+    }
+
+    if (importedNotes.length) {
+      updatedSections.push("player notes");
+    }
+  }
+
+  return updatedSections;
+}
+
+function applyTeamContextSnapshot(teamContext) {
+  const teamContextHasSettings = teamContext.settings && typeof teamContext.settings === "object";
+
+  if (teamContextHasSettings) {
+    if (Object.prototype.hasOwnProperty.call(teamContext.settings, "periodLabel")) {
+      state.settings.periodLabel = normalizePeriodLabel(teamContext.settings.periodLabel);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(teamContext.settings, "periodCount")) {
+      state.settings.periodCount = normalizePositiveNumber(teamContext.settings.periodCount, state.settings.periodCount);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(teamContext.settings, "playersOnField")) {
+      state.settings.playersOnField = normalizePositiveNumber(teamContext.settings.playersOnField, state.settings.playersOnField);
+    }
+  }
+
+  const importedQuarter = Object.prototype.hasOwnProperty.call(teamContext, "currentQuarter")
+    ? normalizePositiveNumber(teamContext.currentQuarter, state.feedback.currentQuarter || 1)
+    : null;
+
+  if (importedQuarter !== null) {
+    const maxQuarter = normalizePositiveNumber(state.settings.periodCount, 4);
+    const clampedQuarter = Math.min(Math.max(importedQuarter, 1), maxQuarter);
+    state.feedback.currentQuarter = clampedQuarter;
+    state.notepad.currentQuarter = clampedQuarter;
+  }
+
+  const seasonHubDraft = normalizeSeasonHubDraft(state.seasonHub.draft);
+
+  if (Object.prototype.hasOwnProperty.call(teamContext, "teamName")) {
+    seasonHubDraft.team = `${teamContext.teamName ?? ""}`;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(teamContext, "seasonYear")) {
+    seasonHubDraft.seasonYear = `${teamContext.seasonYear ?? ""}`;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(teamContext, "competition")) {
+    seasonHubDraft.competition = `${teamContext.competition ?? ""}`;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(teamContext, "coachingRole")) {
+    seasonHubDraft.coachingRole = `${teamContext.coachingRole ?? ""}`;
+  }
+
+  state.seasonHub.draft = seasonHubDraft;
+
+  if (Array.isArray(teamContext.players)) {
+    state.players = teamContext.players
+      .map((player) => normalizeImportedPlayer(player))
+      .filter((player) => player.name);
+    sortPlayersAlphabetically();
+  }
+}
+
+function mergeSnapshotSection(items, selectedId, importedSource, normalizeDraft, normalizeItem, onApply, now) {
+  const source = importedSource && typeof importedSource === "object" ? importedSource : {};
+  const targetId = resolveImportedSectionId(source, selectedId, items);
+  const mergedSource = {
+    ...(items.find((entry) => entry.id === targetId) || {}),
+    ...source,
+    id: targetId,
+  };
+  const normalizedDraft = normalizeDraft(mergedSource);
+  const normalizedItem = normalizeItem({
+    ...mergedSource,
+    ...normalizedDraft,
+    createdAt: mergedSource.createdAt || now,
+    updatedAt: now,
+  });
+  const existingIndex = items.findIndex((entry) => entry.id === targetId);
+
+  if (existingIndex >= 0) {
+    items[existingIndex] = {
+      ...items[existingIndex],
+      ...normalizedItem,
+      createdAt: items[existingIndex].createdAt || normalizedItem.createdAt || now,
+      updatedAt: now,
+    };
+    onApply(items[existingIndex]);
+    return;
+  }
+
+  items.push({
+    ...normalizedItem,
+    createdAt: normalizedItem.createdAt || now,
+    updatedAt: now,
+  });
+  onApply(items[items.length - 1]);
+}
+
+function resolveImportedSectionId(source, selectedId, items) {
+  const importedId = `${source?.id || ""}`.trim();
+  if (importedId) {
+    return importedId;
+  }
+
+  if (selectedId) {
+    return selectedId;
+  }
+
+  if (items.length) {
+    return items[items.length - 1].id;
+  }
+
+  return createId();
+}
+
+function normalizeImportedPlayer(player) {
+  const source = player && typeof player === "object" ? player : {};
+
+  return {
+    id: `${source.id || createId()}`,
+    name: `${source.name || ""}`.trim(),
+    preferredPosition: `${source.preferredPosition ?? ""}`,
+    active: source.active !== false,
+    canBench: source.canBench !== false,
+    benchFirst: source.benchFirst === true,
+    maxBenchPeriods: normalizeMaxBenchValue(source.maxBenchPeriods),
+  };
+}
+
+function normalizeImportedPlayerNote(note) {
+  const source = note && typeof note === "object" ? note : {};
+  const draft = normalizePlayerNoteDraft(source);
+  const playerId = `${draft.playerId || ""}`.trim();
+  const currentPlayerName = getPlayerNameById(playerId);
+
+  return {
+    id: `${source.id || ""}`.trim(),
+    playerId,
+    playerName: currentPlayerName || draft.playerName,
+    strengths: draft.strengths,
+    currentFocus: draft.currentFocus,
+    bestRole: draft.bestRole,
+    coachingCue: draft.coachingCue,
+    confidenceDevelopmentNote: draft.confidenceDevelopmentNote,
+    latestUpdateNote: draft.latestUpdateNote,
+    createdAt: source.createdAt || source.updatedAt || null,
+    updatedAt: source.updatedAt || source.createdAt || null,
+  };
+}
+
+function mergePlayerNoteSnapshot(items, importedNote, now) {
+  const source = importedNote && typeof importedNote === "object" ? importedNote : {};
+  const targetId = resolveImportedPlayerNoteId(source, items);
+  const existingIndex = items.findIndex((entry) => entry.id === targetId);
+  const currentPlayerName = getPlayerNameById(source.playerId) || source.playerName || "";
+  const normalizedItem = normalizePlayerNoteItem({
+    ...(existingIndex >= 0 ? items[existingIndex] : {}),
+    ...source,
+    id: targetId,
+    playerName: currentPlayerName || source.playerName,
+    createdAt: source.createdAt || (existingIndex >= 0 ? items[existingIndex].createdAt : null) || now,
+    updatedAt: now,
+  });
+
+  if (existingIndex >= 0) {
+    items[existingIndex] = {
+      ...items[existingIndex],
+      ...normalizedItem,
+      createdAt: items[existingIndex].createdAt || normalizedItem.createdAt || now,
+      updatedAt: now,
+    };
+    return items[existingIndex];
+  }
+
+  items.push({
+    ...normalizedItem,
+    createdAt: normalizedItem.createdAt || now,
+    updatedAt: now,
+  });
+  return items[items.length - 1];
+}
+
+function resolveImportedPlayerNoteId(source, items) {
+  const importedId = `${source?.id || ""}`.trim();
+  if (importedId) {
+    return importedId;
+  }
+
+  const importedPlayerId = `${source?.playerId || ""}`.trim();
+  if (importedPlayerId) {
+    const existingByPlayerId = items.find((note) => note.playerId === importedPlayerId);
+    if (existingByPlayerId) {
+      return existingByPlayerId.id;
+    }
+  }
+
+  if (items.length) {
+    return items[items.length - 1].id;
+  }
+
+  return createId();
 }
 
 function projectSnapshotEntry(draft, entry) {

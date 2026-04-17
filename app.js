@@ -3976,6 +3976,7 @@ function renderDashboard() {
   const playerNoteTitle = `${playerNoteSource.playerName || getPlayerNameById(playerNoteSource.playerId) || ""}`.trim();
   const playerNoteSummary = `${playerNoteSource.currentFocus || playerNoteSource.strengths || ""}`.trim();
   const playerNoteDetails = `${playerNoteSource.coachingCue || playerNoteSource.latestUpdateNote || ""}`.trim();
+  const nextAction = weeklyCarryForward || trainingPlanSource.title || gameReviewSource.nextTrainingPriorities || playerNoteSummary;
 
   content.innerHTML = `
     <div class="feedback-grid">
@@ -3991,6 +3992,7 @@ function renderDashboard() {
           </div>
         </div>
         <p class="feedback-summary-text">${escapeHtml(seasonHubSummary || "Season hub context.")}</p>
+        <p class="helper">${escapeHtml(nextAction ? `Next action: ${nextAction}` : "Next action: Set the weekly priority in Weekly Focus.")}</p>
         <ul class="feedback-note-list">
           <li><strong>Theme:</strong> ${escapeHtml(weeklyTheme || "None saved yet.")}</li>
           <li><strong>Training:</strong> ${escapeHtml(trainingPlanSummary || "None saved yet.")}</li>

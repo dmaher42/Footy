@@ -125,6 +125,7 @@ const elements = {
   applyUpdateBtn: document.querySelector("#apply-update-btn"),
   gameViewButtons: document.querySelectorAll("[data-game-view]"),
   rotationSection: document.querySelector("#rotation-section"),
+  dashboardSection: document.querySelector("#dashboard-section"),
   feedbackSection: document.querySelector("#feedback-section"),
   gameReviewsSection: document.querySelector("#game-reviews-section"),
   trainingPlansSection: document.querySelector("#training-plans-section"),
@@ -148,6 +149,7 @@ const elements = {
   setupBackdrop: document.querySelector("#setup-backdrop"),
   setupPanel: document.querySelector("#setup-panel"),
   copyFeedbackBtn: document.querySelector("#copy-feedback-btn"),
+  dashboardContent: document.querySelector("#dashboard-content"),
   gameReviewsContent: document.querySelector("#game-reviews-content"),
   trainingPlansContent: document.querySelector("#training-plans-content"),
   weeklyFocusContent: document.querySelector("#weekly-focus-content"),
@@ -554,6 +556,7 @@ function render() {
   } else {
     currentRotationPlan = null;
   }
+  renderDashboard();
   renderFeedbackTracker();
   renderGameReviews();
   renderTrainingPlans();
@@ -1031,6 +1034,7 @@ function syncSetupPanel() {
 
 function syncGameView() {
   const viewMap = {
+    dashboard: elements.dashboardSection,
     feedback: elements.feedbackSection,
     gameReviews: elements.gameReviewsSection,
     trainingPlans: elements.trainingPlansSection,
@@ -3915,6 +3919,142 @@ function showMessages(messages) {
   elements.messages.innerHTML = messages
     .map((message) => `<div class="message ${message.type}">${escapeHtml(message.text)}</div>`)
     .join("");
+}
+
+function getLatestSavedEntry(items) {
+  if (!Array.isArray(items) || !items.length) {
+    return null;
+  }
+
+  return items[items.length - 1];
+}
+
+function getDashboardSourceHelper(source, formatDate, draftLabel) {
+  if (source?.id) {
+    return `Last saved ${formatDate(source.updatedAt)}.`;
+  }
+
+  return draftLabel;
+}
+
+function renderDashboard() {
+  const content = elements.dashboardContent;
+  if (!content) {
+    return;
+  }
+
+  const seasonHubSource = getSelectedSeasonHub() || getLatestSavedEntry(state.seasonHub.items) || normalizeSeasonHubDraft(state.seasonHub.draft);
+  const weeklyFocusSource = getSelectedWeeklyFocus() || getLatestSavedEntry(state.weeklyFocus.items) || normalizeWeeklyFocusDraft(state.weeklyFocus.draft);
+  const gameReviewSource = getSelectedGameReview() || getLatestSavedEntry(state.gameReviews.items) || normalizeGameReviewDraft(state.gameReviews.draft);
+  const trainingPlanSource = getSelectedTrainingPlan() || getLatestSavedEntry(state.trainingPlans.items) || normalizeTrainingPlanDraft(state.trainingPlans.draft);
+  const playerNoteSource = getSelectedPlayerNote() || getLatestSavedEntry(state.playerNotes.items) || normalizePlayerNoteDraft(state.playerNotes.draft);
+  const activePlayers = state.players.filter((player) => player.name && player.active);
+  const currentQuarter = getCurrentFeedbackQuarter();
+  const teamName = `${seasonHubSource.team || ""}`.trim() || "Current Season";
+  const teamMeta = [seasonHubSource.seasonYear, seasonHubSource.competition, seasonHubSource.coachingRole]
+    .map((value) => `${value || ""}`.trim())
+    .filter(Boolean)
+    .join(" · ");
+  const seasonHubSummary = [
+    `${seasonHubSource.teamValues || ""}`.trim(),
+    `${seasonHubSource.nonNegotiables || ""}`.trim(),
+    `${seasonHubSource.currentGamePlanLanguage || ""}`.trim(),
+  ].filter(Boolean).join(" · ");
+  const weeklyTheme = `${weeklyFocusSource.mainTheme || weeklyFocusSource.keyPriorities || ""}`.trim();
+  const weeklyContext = `${weeklyFocusSource.context || ""}`.trim();
+  const weeklyCarryForward = `${weeklyFocusSource.carryForwardIssue || ""}`.trim();
+  const trainingPlanSummary = [
+    `${trainingPlanSource.title || ""}`.trim(),
+    `${trainingPlanSource.date || ""}`.trim(),
+  ].filter(Boolean).join(" · ");
+  const trainingPlanDetails = `${trainingPlanSource.sessionPurpose || trainingPlanSource.mainDrills || ""}`.trim();
+  const gameReviewSummary = [
+    `${gameReviewSource.opponent || ""}`.trim(),
+    `${gameReviewSource.result || ""}`.trim(),
+  ].filter(Boolean).join(" · ");
+  const gameReviewDetails = `${gameReviewSource.whatWorked || gameReviewSource.nextTrainingPriorities || ""}`.trim();
+  const playerNoteTitle = `${playerNoteSource.playerName || getPlayerNameById(playerNoteSource.playerId) || ""}`.trim();
+  const playerNoteSummary = `${playerNoteSource.currentFocus || playerNoteSource.strengths || ""}`.trim();
+  const playerNoteDetails = `${playerNoteSource.coachingCue || playerNoteSource.latestUpdateNote || ""}`.trim();
+
+  content.innerHTML = `
+    <div class="feedback-grid">
+      <article class="feedback-panel" style="grid-column: 1 / -1;">
+        <div class="section-heading report-card-header">
+          <div>
+            <h3>${escapeHtml(teamName)}</h3>
+            <p class="helper">${escapeHtml(teamMeta || "Use Season Hub for the connected season context.")}</p>
+          </div>
+          <div class="inline-actions compact-actions">
+            <span class="small-pill">Quarter ${escapeHtml(getFeedbackQuarterLabel(currentQuarter))}</span>
+            <span class="live-count-pill">${escapeHtml(`${activePlayers.length} active players`)}</span>
+          </div>
+        </div>
+        <p class="feedback-summary-text">${escapeHtml(
+          seasonHubSummary || "This dashboard reads the current season setup from Season Hub."
+        )}</p>
+        <ul class="feedback-note-list">
+          <li><strong>Weekly theme:</strong> ${escapeHtml(weeklyTheme || "No weekly theme saved yet.")}</li>
+          <li><strong>Next training:</strong> ${escapeHtml(trainingPlanSummary || "No training plan saved yet.")}</li>
+          <li><strong>Latest review:</strong> ${escapeHtml(gameReviewSummary || "No game review saved yet.")}</li>
+        </ul>
+      </article>
+
+      <article class="feedback-panel">
+        <div class="section-heading report-card-header">
+          <div>
+            <h3>Weekly Theme</h3>
+            <p class="helper">${escapeHtml(getDashboardSourceHelper(weeklyFocusSource, formatWeeklyFocusDate, "Using the current weekly draft."))}</p>
+          </div>
+        </div>
+        <p class="feedback-summary-text">${escapeHtml(weeklyTheme || "No weekly theme saved yet.")}</p>
+        <ul class="feedback-note-list">
+          <li><strong>Context:</strong> ${escapeHtml(weeklyContext || "Add opponent or week context in Weekly Focus.")}</li>
+          <li><strong>Carry forward:</strong> ${escapeHtml(weeklyCarryForward || "No carry-forward issue recorded yet.")}</li>
+        </ul>
+      </article>
+
+      <article class="feedback-panel">
+        <div class="section-heading report-card-header">
+          <div>
+            <h3>Next Training</h3>
+            <p class="helper">${escapeHtml(getDashboardSourceHelper(trainingPlanSource, formatTrainingPlanDate, "Using the current training draft."))}</p>
+          </div>
+        </div>
+        <p class="feedback-summary-text">${escapeHtml(trainingPlanSummary || "No training plan saved yet.")}</p>
+        <ul class="feedback-note-list">
+          <li><strong>Purpose:</strong> ${escapeHtml(trainingPlanDetails || "Add the session purpose or main drills in Training Plans.")}</li>
+        </ul>
+      </article>
+
+      <article class="feedback-panel">
+        <div class="section-heading report-card-header">
+          <div>
+            <h3>Latest Review</h3>
+            <p class="helper">${escapeHtml(getDashboardSourceHelper(gameReviewSource, formatGameReviewDate, "Using the current review draft."))}</p>
+          </div>
+        </div>
+        <p class="feedback-summary-text">${escapeHtml(gameReviewSummary || "No game review saved yet.")}</p>
+        <ul class="feedback-note-list">
+          <li><strong>What worked / next step:</strong> ${escapeHtml(gameReviewDetails || "Add the latest game themes in Game Reviews.")}</li>
+        </ul>
+      </article>
+
+      <article class="feedback-panel">
+        <div class="section-heading report-card-header">
+          <div>
+            <h3>Player Note Spotlight</h3>
+            <p class="helper">${escapeHtml(getDashboardSourceHelper(playerNoteSource, formatPlayerNoteDate, "Using the current player note draft."))}</p>
+          </div>
+        </div>
+        <p class="feedback-summary-text">${escapeHtml(playerNoteTitle || "No player note selected yet.")}</p>
+        <ul class="feedback-note-list">
+          <li><strong>Current focus:</strong> ${escapeHtml(playerNoteSummary || "Add a current focus in Player Notes.")}</li>
+          <li><strong>Coaching cue / update:</strong> ${escapeHtml(playerNoteDetails || "Add a coaching cue or latest update in Player Notes.")}</li>
+        </ul>
+      </article>
+    </div>
+  `;
 }
 
 function buildCurrentSeasonSnapshot() {

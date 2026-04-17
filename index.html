@@ -25,6 +25,7 @@
         <button id="toggle-update-menu-btn" class="update-menu-btn" type="button" aria-expanded="false">Menu</button>
         <div id="update-panel-card" class="update-panel-card" hidden>
           <div class="menu-view-actions">
+            <button class="game-nav-btn" type="button" data-game-view="dashboard">Current Week</button>
             <button class="game-nav-btn active" type="button" data-game-view="feedback">Feedback</button>
             <button class="game-nav-btn" type="button" data-game-view="gameReviews">Game Reviews</button>
             <button class="game-nav-btn" type="button" data-game-view="trainingPlans">Training Plans</button>
@@ -138,6 +139,15 @@
         <div id="rotation-output" class="rotation-output">
           <p class="placeholder">Add players, then press <strong>Generate Rotation</strong>.</p>
         </div>
+      </section>
+
+      <section id="dashboard-section" class="card game-view-section" hidden>
+        <div class="section-heading panel-heading">
+          <div>
+            <h2>Current Week</h2>
+          </div>
+        </div>
+        <div id="dashboard-content"></div>
       </section>
 
       <section id="feedback-section" class="card game-view-section" hidden>

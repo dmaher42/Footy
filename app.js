@@ -1895,52 +1895,97 @@ function normalizeTrainingPlanItem(plan) {
 
 function createSeedTrainingPlanItem() {
   return normalizeTrainingPlanItem({
-    title: "Contest First, Then Structure",
+    id: "seed-training-plan-kicking-leading-patterns",
+    title: "Kicking and Leading Patterns",
     date: "Planned",
-    sessionPurpose: "Contest first, then structure",
+    sessionPurpose: "Clean kicking and clearer leading patterns",
     expectedNumbers: "U14 Nairne",
     duration: "60 minutes",
     warmUp: [
-      "5:00-5:08 Competitive warm-up",
-      "Ground balls, body pressure, run to receive",
+      "5:00-5:10 Partner kick progression",
+      "No step kick, 1 step kick, 3-5 step kick",
     ].join("\n"),
     fundamentals: [
-      "5:08-5:20 Contest block 1",
-      "Outnumber at contest, pair off, relevant/irrelevant",
-      "5:20-5:32 Contest block 2",
-      "Tackling, lock ball in, forward-half pressure",
+      "5:10-5:18 W drill",
+      "Kick to shape, lead timing, face forward immediately",
+      "5:18-5:28 HB 2v1 down the line",
+      "Support run, draw and release, run to receive",
     ].join("\n"),
     mainDrills: [
-      "5:32-5:42 Structure block 1",
-      "Forward leading patterns, spacing, paired leads",
-      "5:42-5:50 Structure block 2",
-      "Kick-ins, face forward immediately, exit shape",
+      "5:28-5:43 Large oval leading drill",
+      "Where to lead, how to lead, how to kick to the lead",
     ].join("\n"),
     gamePlayConditionedGame: [
-      "5:50-5:58 Conditioned game",
-      "Contest to structure transfer",
+      "5:43-5:58 CHB to forward transition drill",
+      "Transition ball movement, forward entry, finish with shot on goal",
     ].join("\n"),
     coachingCues: [
-      "One to win it, one to protect, one to receive",
-      "Pair off",
-      "Tackle and lock it in",
-      "One hard lead, one holds or delays",
+      "Take your time",
+      "Lead hard and direct",
+      "One leads, one holds",
+      "Kick to the run",
       "Face forward immediately",
+      "Run to receive",
     ].join("\n"),
     notesReviewNextTime: [
       "Notebook: Training Planning",
       "Team: U14 Nairne",
-      "Status: planned",
-      "Focus areas: tackling, ground balls, leading patterns, kick-ins",
-      "Linked review issues: damaging opposition mids, loose defence, outnumbered at contests, lack of forward structure, players getting lost/confused",
+      "Focus areas: kicking execution, leading patterns, support run, forward transition",
+      "Session blocks:",
+      "- 5:00-5:10 Partner kick progression",
+      "- 5:10-5:18 W drill",
+      "- 5:18-5:28 HB 2v1 down the line",
+      "- 5:28-5:43 Large oval leading drill",
+      "- 5:43-5:58 CHB to forward transition drill",
     ].join("\n"),
   });
 }
 
 function seedTrainingPlanIfMissing() {
-  const seedTitle = "Contest First, Then Structure";
-  if (state.trainingPlans.items.some((plan) => `${plan.title || ""}`.trim() === seedTitle)) {
+  const canonicalSeedId = "seed-training-plan-kicking-leading-patterns";
+  const canonicalSeedTitle = "Kicking and Leading Patterns";
+  const legacySeedTitle = "Contest First, Then Structure";
+
+  const canonicalIndex = state.trainingPlans.items.findIndex((plan) => {
+    const title = `${plan?.title || ""}`.trim();
+    return plan?.id === canonicalSeedId || title === canonicalSeedTitle;
+  });
+
+  if (canonicalIndex >= 0) {
+    const canonicalPlan = state.trainingPlans.items[canonicalIndex];
+    const filteredItems = state.trainingPlans.items.filter((plan, index) => {
+      if (index === canonicalIndex) {
+        return true;
+      }
+
+      const title = `${plan?.title || ""}`.trim();
+      return plan?.id !== canonicalSeedId && title !== canonicalSeedTitle && title !== legacySeedTitle;
+    });
+
+    if (filteredItems.length !== state.trainingPlans.items.length) {
+      state.trainingPlans.items = filteredItems;
+      state.trainingPlans.selectedPlanId = canonicalPlan.id;
+      state.trainingPlans.draft = cloneTrainingPlanDraft(canonicalPlan);
+      return true;
+    }
+
     return false;
+  }
+
+  const legacyIndex = state.trainingPlans.items.findIndex((plan) => `${plan?.title || ""}`.trim() === legacySeedTitle);
+  if (legacyIndex >= 0) {
+    const existingPlan = state.trainingPlans.items[legacyIndex] || {};
+    const seedPlan = createSeedTrainingPlanItem();
+    state.trainingPlans.items[legacyIndex] = {
+      ...existingPlan,
+      ...seedPlan,
+      id: seedPlan.id,
+      createdAt: existingPlan.createdAt || seedPlan.createdAt,
+      updatedAt: existingPlan.updatedAt || seedPlan.updatedAt,
+    };
+    state.trainingPlans.selectedPlanId = seedPlan.id;
+    state.trainingPlans.draft = cloneTrainingPlanDraft(state.trainingPlans.items[legacyIndex]);
+    return true;
   }
 
   const seedPlan = createSeedTrainingPlanItem();

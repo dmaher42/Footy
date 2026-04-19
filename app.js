@@ -1,5 +1,6 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.17.1";
+const APP_VERSION = "2026.04.19.1";
+const ROTATIONS_MANAGER_URL = "https://github.com/dmaher42/Rotations_Manager";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
@@ -197,10 +198,11 @@ function bindEvents() {
     openSetupPanel();
   });
   elements.closeSetupBtn.addEventListener("click", closeSetupPanel);
-  elements.generateCloseBtn.addEventListener("click", refreshPlanAndCloseSetup);
+  elements.generateCloseBtn.addEventListener("click", () => {
+    openRotationsManager();
+  });
   elements.generateBtn.addEventListener("click", () => {
-    setUpdateMenuOpen(false);
-    refreshPlanAndCloseSetup();
+    openRotationsManager();
   });
   elements.printBtn.addEventListener("click", () => {
     setUpdateMenuOpen(false);
@@ -1013,6 +1015,12 @@ function refreshPlanAndRender() {
 function refreshPlanAndCloseSetup() {
   refreshPlanAndRender();
   closeSetupPanel();
+}
+
+function openRotationsManager() {
+  setUpdateMenuOpen(false);
+  closeSetupPanel();
+  window.open(ROTATIONS_MANAGER_URL, "_blank", "noopener,noreferrer");
 }
 
 function openSetupPanel() {

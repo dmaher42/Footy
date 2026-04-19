@@ -1,6 +1,6 @@
 const STORAGE_KEY = "footy-player-manager-state";
-const APP_VERSION = "2026.04.19.1";
-const ROTATIONS_MANAGER_URL = "https://github.com/dmaher42/Rotations_Manager";
+const APP_VERSION = "2026.04.19.2";
+const ROTATIONS_MANAGER_URL = "https://dmaher42.github.io/Rotations_Manager/";
 const CHECK_UPDATE_BUTTON_LABEL = "Check for Update";
 const FEEDBACK_CATEGORIES = [
   {
